@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Freefly IndiSplit</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 20px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 14px; margin: 14px 0; }
+    label { display:block; font-size: 12px; color: #444; margin-bottom: 6px; }
+    input, select, button {
+      font: inherit; padding: 10px; border: 1px solid #ccc; border-radius: 10px;
+    }
+    input[type="number"] { width: 150px; }
+    input[type="text"] { width: 240px; }
+    button { cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
+    .muted { color:#666; font-size: 12px; }
+    .danger { color: #b00020; font-weight: 700; }
+    .ok { color: #0a7a2f; font-weight: 700; }
+    .pill { display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; margin-left: 8px;}
+    .right { text-align:right; }
+    .tiny { font-size: 11px; }
+    .btn { padding: 12px 16px; font-weight: 650; }
+    .btn2 { padding: 12px 16px; }
+    .chip { display:inline-flex; align-items:center; gap:6px; border:1px solid #ddd; border-radius:999px; padding:6px 10px; margin:4px 6px 0 0; }
+    .chip input { width:auto; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+  </style>
+</head>
+<body>
+  <h1>Freefly IndiSplit <span class="pill">static</span><span class="pill">itemized</span><span class="pill">sanity check</span></h1>
+  <div class="muted">Everything runs in your browser. Nothing is uploaded anywhere. Default roster is built-in; additions are saved locally in your browser.</div>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>Payer</label>
+        <input id="payer" type="text" placeholder="Ansh" />
+      </div>
+      <div style="flex:1; min-width: 320px;">
+        <label>People for this split (comma-separated) <span class="muted tiny">(leave blank to use the roster)</span></label>
+        <input id="people" type="text" placeholder="(blank = use roster)" style="width:100%;" />
+      </div>
+      <div>
+        <button id="make_people" class="btn2">Refresh</button>
+      </div>
+    </div>
+
+    <div id="people_chips" style="margin-top:10px;"></div>
+
+    <div class="row" style="margin-top:12px;">
+      <div>
+        <label>Tax</label>
+        <input id="tax" type="number" step="0.01" min="0" value="0" />
+      </div>
+      <div>
+        <label>Tip</label>
+        <input id="tip" type="number" step="0.01" min="0" value="0" />
+      </div>
+      <div>
+        <label>Allocate tax+tip</label>
+        <select id="allocation">
+          <option value="proportional" selected>Proportional to subtotal</option>
+          <option value="equal">Equal split</option>
+        </select>
+      </div>
+      <div>
+        <label>Receipt grand total (optional)</label>
+        <input id="receipt_total" type="number" step="0.01" min="0" placeholder="e.g., 86.42" />
+      </div>
+      <div>
+        <label class="tiny">Auto-fix mismatch</label>
+        <div class="muted tiny">Adjust tax to match receipt total</div>
+        <input id="auto_fix" type="checkbox" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0;">Roster (built-in + local additions)</h2>
+    <div class="muted">Everyone sees the built-in roster when they load the page. If you add names, they’re saved in <b>your</b> browser only.</div>
+
+    <div class="row" style="margin-top:10px;">
+      <div style="flex:1; min-width:320px;">
+        <label>Add person to roster (local)</label>
+        <input id="db_add_name" type="text" placeholder="e.g., Kyle" style="width:100%;" />
+      </div>
+      <div>
+        <button id="db_add_btn" class="btn2">Add</button>
+      </div>
+      <div>
+        <button id="db_reset_btn" class="btn2">Reset local additions</button>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div class="muted tiny">Click a name to remove it from your local additions (built-in names can’t be removed):</div>
+      <div id="db_people_list" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0;">Items</h2>
+
+    <div class="row">
+      <div>
+        <label>Description</label>
+        <input id="it_desc" type="text" placeholder="Pav Bhaji" />
+      </div>
+      <div>
+        <label>Amount</label>
+        <input id="it_amt" type="number" step="0.01" min="0" placeholder="12.50" />
+      </div>
+      <div>
+        <label>Type</label>
+        <select id="it_kind">
+          <option value="person" selected>One person</option>
+          <option value="shared">Shared</option>
+        </select>
+      </div>
+      <div id="person_wrap">
+        <label>Person</label>
+        <select id="it_person"></select>
+      </div>
+      <div id="shared_wrap" style="display:none; min-width: 360px;">
+        <label>Shared with</label>
+        <div id="shared_checkboxes" class="muted tiny">Click “Refresh” above first.</div>
+      </div>
+      <div>
+        <button id="add_item" class="btn2">Add item</button>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <table id="items_table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th class="right">Amount</th>
+            <th>Assigned</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="muted tiny" style="margin-top:10px;">
+        Shared items are split evenly among the selected people.
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <button id="compute" class="btn">Compute split</button>
+    <button id="save" class="btn2">Save</button>
+    <button id="load" class="btn2">Load</button>
+    <button id="load_demo" class="btn2">Load demo</button>
+    <button id="export_json" class="btn2">Export JSON</button>
+    <div id="status" class="muted" style="align-self:center;"></div>
+  </div>
+
+  <div class="card" id="results_card" style="display:none;">
+    <h2 style="margin-top:0;">Results</h2>
+    <div id="sanity"></div>
+
+    <h3>Per-person breakdown</h3>
+    <table id="results_table">
+      <thead>
+        <tr>
+          <th>Person</th>
+          <th class="right">Subtotal</th>
+          <th class="right">Tax+Tip</th>
+          <th class="right">Total share</th>
+          <th class="right">Owes payer</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h3>Copy/paste notes</h3>
+    <div id="notes"></div>
+  </div>
+
+<script>
+  // ---------- Helpers ----------
+  const $ = (id) => document.getElementById(id);
+  const escapeHtml = (str) => String(str).replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+  const parsePeople = (s) => s.split(",").map(x => x.trim()).filter(Boolean);
+  const toCents = (n) => Math.round((Number(n) + Number.EPSILON) * 100);
+  const fromCents = (c) => (c / 100);
+  const money = (n) => Number(n).toFixed(2);
+
+  function download(filename, text){
+    const blob = new Blob([text], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------- Built-in roster (everyone sees these) ----------
+  const BUILTIN_ROSTER = [
+    "Ansh", "Craig", "Sandesh", "Peter", "Lukas", "Charlie", "Andrew",
+    "Deniz", "James", "Abhi", "Harrison", "Gabe", "Nate"
+  ];
+
+  // ---------- Local additions (saved per-browser) ----------
+  const PEOPLE_LOCAL_KEY = "indisplit_people_local_additions_v1";
+
+  function normName(s){ return String(s || "").trim(); }
+
+  function uniqSorted(arr){
+    const out = [];
+    const seen = new Set();
+    for(const x of arr.map(normName)){
+      if(!x) continue;
+      const key = x.toLowerCase();
+      if(seen.has(key)) continue;
+      seen.add(key);
+      out.push(x);
+    }
+    out.sort((a,b)=>a.localeCompare(b));
+    return out;
+  }
+
+  function loadLocalAdditions(){
+    const raw = localStorage.getItem(PEOPLE_LOCAL_KEY);
+    if(!raw) return [];
+    try{
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? uniqSorted(parsed) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveLocalAdditions(list){
+    const cleaned = uniqSorted(list);
+    localStorage.setItem(PEOPLE_LOCAL_KEY, JSON.stringify(cleaned));
+    return cleaned;
+  }
+
+  function addLocalName(name){
+    const n = normName(name);
+    if(!n) return;
+    // if it's already in builtin roster, don't store it as local addition
+    const builtinLower = new Set(BUILTIN_ROSTER.map(x => x.toLowerCase()));
+    if(builtinLower.has(n.toLowerCase())) return;
+
+    const cur = loadLocalAdditions();
+    cur.push(n);
+    saveLocalAdditions(cur);
+  }
+
+  function removeLocalName(name){
+    const key = normName(name).toLowerCase();
+    const cur = loadLocalAdditions().filter(x => x.toLowerCase() !== key);
+    saveLocalAdditions(cur);
+  }
+
+  function resetLocalAdditions(){
+    localStorage.removeItem(PEOPLE_LOCAL_KEY);
+  }
+
+  function getRoster(){
+    return uniqSorted([...BUILTIN_ROSTER, ...loadLocalAdditions()]);
+  }
+
+  // ---------- State ----------
+  const items = [];
+  let people = [];
+
+  // ---------- UI: roster display + dropdowns ----------
+  function refreshRosterUI(){
+    const dbWrap = $("db_people_list");
+    if(!dbWrap) return;
+
+    const roster = getRoster();
+    const builtinLower = new Set(BUILTIN_ROSTER.map(x => x.toLowerCase()));
+    dbWrap.innerHTML = "";
+
+    roster.forEach(name => {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.style.cursor = builtinLower.has(name.toLowerCase()) ? "default" : "pointer";
+      chip.title = builtinLower.has(name.toLowerCase())
+        ? "Built-in roster"
+        : "Click to remove from your local additions";
+      chip.textContent = name;
+
+      if(!builtinLower.has(name.toLowerCase())){
+        chip.onclick = () => {
+          if(confirm(`Remove "${name}" from your local additions?`)){
+            removeLocalName(name);
+            makeChips();
+            $("status").textContent = `Removed ${name}.`;
+          }
+        };
+      }
+      dbWrap.appendChild(chip);
+    });
+  }
+
+  function refreshPeopleUI(){
+    // Person dropdown
+    const sel = $("it_person");
+    sel.innerHTML = "";
+    people.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p; opt.textContent = p;
+      sel.appendChild(opt);
+    });
+
+    // Shared checkboxes
+    const wrap = $("shared_checkboxes");
+    wrap.innerHTML = "";
+    if(people.length === 0){
+      wrap.textContent = "Click “Refresh” above first.";
+      return;
+    }
+    people.forEach(p => {
+      const label = document.createElement("label");
+      label.className = "chip";
+      label.innerHTML = `<input type="checkbox" value="${escapeHtml(p)}" checked /> ${escapeHtml(p)}`;
+      wrap.appendChild(label);
+    });
+  }
+
+  function makeChips(){
+    const roster = getRoster();
+
+    // If user typed names in the People field, use them; otherwise use roster
+    const typed = parsePeople($("people").value);
+    const payer = $("payer").value.trim();
+
+    let active = typed.length ? typed : roster;
+
+    // Ensure payer is included if present
+    if(payer && !active.some(x => x.toLowerCase() === payer.toLowerCase())) active.push(payer);
+
+    people = uniqSorted(active);
+
+    // Render chips
+    const chips = $("people_chips");
+    chips.innerHTML = "";
+    people.forEach(p => {
+      const span = document.createElement("span");
+      span.className = "chip";
+      span.innerHTML = `${escapeHtml(p)}`;
+      chips.appendChild(span);
+    });
+
+    refreshPeopleUI();
+    refreshRosterUI();
+  }
+
+  // ---------- Items table ----------
+  function refreshItemsTable(){
+    const tbody = $("items_table").querySelector("tbody");
+    tbody.innerHTML = "";
+    items.forEach((it, idx) => {
+      const assigned = it.kind === "person"
+        ? it.person
+        : `shared: ${it.shared_with.join(", ")}`;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(it.description)}</td>
+        <td class="right">$${money(it.amount)}</td>
+        <td>${escapeHtml(assigned)}</td>
+        <td class="right"><button data-idx="${idx}">Remove</button></td>
+      `;
+      tr.querySelector("button").onclick = (e) => {
+        const i = Number(e.target.getAttribute("data-idx"));
+        items.splice(i, 1);
+        refreshItemsTable();
+      };
+      tbody.appendChild(tr);
+    });
+  }
+
+  function getSharedSelected(){
+    const wrap = $("shared_checkboxes");
+    const checks = wrap.querySelectorAll("input[type=checkbox]");
+    return Array.from(checks).filter(c => c.checked).map(c => c.value);
+  }
+
+  // ---------- Core math (all in cents) ----------
+  function compute(){
+    const payer = $("payer").value.trim();
+    let ppl = parsePeople($("people").value);
+    if(ppl.length === 0) ppl = getRoster(); // blank => roster
+    if(payer && !ppl.some(x => x.toLowerCase() === payer.toLowerCase())) ppl.push(payer);
+
+    if(!payer) throw new Error("Payer is required.");
+    if(ppl.length === 0) throw new Error("Add at least one person.");
+    const pplSet = new Set(ppl.map(x => x.toLowerCase()));
+
+    // Subtotals in cents
+    const subtotals = Object.fromEntries(ppl.map(p => [p, 0]));
+
+    let itemsTotalC = 0;
+    for(const it of items){
+      const amtC = toCents(it.amount);
+      itemsTotalC += amtC;
+
+      if(it.kind === "person"){
+        const key = String(it.person || "").toLowerCase();
+        if(!pplSet.has(key)) throw new Error(`Unknown person in item: ${it.person}`);
+        // find canonical name in ppl
+        const canon = ppl.find(x => x.toLowerCase() === key);
+        subtotals[canon] += amtC;
+
+      } else {
+        const shared = (it.shared_with || []).map(x => String(x || "").trim()).filter(Boolean);
+        if(shared.length === 0) throw new Error(`Shared item has no people: ${it.description}`);
+
+        shared.forEach(p => {
+          if(!pplSet.has(p.toLowerCase())) throw new Error(`Unknown person in shared item: ${p}`);
+        });
+
+        // Split evenly in cents; distribute remainder cents to first N people
+        const shareC = Math.floor(amtC / shared.length);
+        let remainder = amtC - shareC * shared.length;
+
+        shared.forEach(p => {
+          const canon = ppl.find(x => x.toLowerCase() === p.toLowerCase());
+          subtotals[canon] += shareC + (remainder > 0 ? 1 : 0);
+          if(remainder > 0) remainder -= 1;
+        });
+      }
+    }
+
+    let taxC = toCents($("tax").value || 0);
+    const tipC = toCents($("tip").value || 0);
+
+    const receiptRaw = $("receipt_total").value;
+    const receiptC = (receiptRaw !== "" ? toCents(receiptRaw) : null);
+
+    let computedGrandC = itemsTotalC + taxC + tipC;
+
+    // sanity + optional autofix (adjust tax)
+    let mismatchC = null;
+    if(receiptC !== null){
+      mismatchC = receiptC - computedGrandC;
+      if($("auto_fix").checked && mismatchC !== 0){
+        taxC += mismatchC;
+        if(taxC < 0) throw new Error("Auto-fix would make tax negative. Check receipt inputs.");
+        computedGrandC = itemsTotalC + taxC + tipC;
+        mismatchC = receiptC - computedGrandC; // should be 0
+      }
+    }
+
+    // allocate extras
+    const extrasC = taxC + tipC;
+    const mode = $("allocation").value;
+
+    const extrasAlloc = Object.fromEntries(ppl.map(p => [p, 0]));
+    if(extrasC !== 0){
+      if(mode === "equal"){
+        const per = Math.floor(extrasC / ppl.length);
+        let rem = extrasC - per * ppl.length;
+        ppl.forEach(p => {
+          extrasAlloc[p] = per + (rem > 0 ? 1 : 0);
+          if(rem > 0) rem -= 1;
+        });
+      } else {
+        const base = Object.values(subtotals).reduce((a,b)=>a+b,0);
+        if(base <= 0){
+          const per = Math.floor(extrasC / ppl.length);
+          let rem = extrasC - per * ppl.length;
+          ppl.forEach(p => {
+            extrasAlloc[p] = per + (rem > 0 ? 1 : 0);
+            if(rem > 0) rem -= 1;
+          });
+        } else {
+          // proportional with rounding
+          let assigned = 0;
+          const frac = ppl.map(p => {
+            const raw = extrasC * (subtotals[p] / base);
+            const flo = Math.floor(raw);
+            assigned += flo;
+            return {p, flo, frac: raw - flo};
+          });
+          let rem = extrasC - assigned;
+          frac.sort((a,b) => b.frac - a.frac);
+          const bonusSet = new Set(frac.slice(0, rem).map(x => x.p));
+          ppl.forEach(p => {
+            const flo = frac.find(x => x.p === p).flo;
+            extrasAlloc[p] = flo + (bonusSet.has(p) ? 1 : 0);
+          });
+        }
+      }
+    }
+
+    // total shares
+    const totalShare = Object.fromEntries(ppl.map(p => [p, subtotals[p] + extrasAlloc[p]]));
+
+    // reconcile grand total
+    const totalShareSum = Object.values(totalShare).reduce((a,b)=>a+b,0);
+    const diff = computedGrandC - totalShareSum;
+    if(diff !== 0){
+      const candidates = ppl.filter(p => p.toLowerCase() !== payer.toLowerCase());
+      const targetList = candidates.length ? candidates : ppl;
+      let target = targetList[0];
+      targetList.forEach(p => { if(totalShare[p] > totalShare[target]) target = p; });
+      totalShare[target] += diff;
+      extrasAlloc[target] += diff;
+    }
+
+    // owes payer
+    const owes = Object.fromEntries(ppl.map(p => [p, (p.toLowerCase() === payer.toLowerCase() ? 0 : totalShare[p])]));
+
+    return {
+      payer,
+      people: ppl,
+      itemsTotalC, taxC, tipC, computedGrandC,
+      receiptC, mismatchC,
+      subtotals, extrasAlloc, totalShare, owes
+    };
+  }
+
+  function render(result){
+    const {payer, people, itemsTotalC, computedGrandC, receiptC, mismatchC, subtotals, extrasAlloc, totalShare, owes} = result;
+
+    // sanity
+    const sanity = $("sanity");
+    sanity.innerHTML = "";
+    let html = `
+      <div class="row">
+        <div><b>Items total:</b> $${money(fromCents(itemsTotalC))}</div>
+        <div><b>Computed grand total:</b> $${money(fromCents(computedGrandC))}</div>
+      </div>
+    `;
+    if(receiptC !== null){
+      const ok = (mismatchC === 0);
+      html += `
+        <div style="margin-top:8px;">
+          <b>Receipt grand total:</b> $${money(fromCents(receiptC))}
+          <span class="${ok ? "ok" : "danger"}">
+            ${ok ? "✓ matches" : `✗ mismatch: $${money(fromCents(mismatchC))}`}
+          </span>
+        </div>
+      `;
+      if(!ok){
+        html += `<div class="muted tiny">Turn on Auto-fix to adjust tax to match receipt total.</div>`;
+      }
+    } else {
+      html += `<div class="muted tiny" style="margin-top:8px;">Add receipt grand total for a sanity check.</div>`;
+    }
+    sanity.innerHTML = html;
+
+    // results table
+    const tbody = $("results_table").querySelector("tbody");
+    tbody.innerHTML = "";
+
+    const sorted = [...people].sort((a,b)=>a.localeCompare(b));
+    sorted.forEach(p => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(p)} ${p.toLowerCase()===payer.toLowerCase()?'<span class="pill">payer</span>':''}</td>
+        <td class="right">$${money(fromCents(subtotals[p]))}</td>
+        <td class="right">$${money(fromCents(extrasAlloc[p]))}</td>
+        <td class="right"><b>$${money(fromCents(totalShare[p]))}</b></td>
+        <td class="right">${p.toLowerCase()===payer.toLowerCase()?'-':`<b>$${money(fromCents(owes[p]))}</b>`}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // notes
+    const notes = $("notes");
+    notes.innerHTML = "";
+    sorted.forEach(p => {
+      if(p.toLowerCase() === payer.toLowerCase()) return;
+      const amt = money(fromCents(owes[p]));
+      const line = document.createElement("div");
+      line.style.marginBottom = "8px";
+      line.innerHTML = `<b>${escapeHtml(p)}:</b> <span class="muted mono">${escapeHtml(p)} owes ${escapeHtml(payer)} $${amt} (Freefly IndiSplit)</span>`;
+      notes.appendChild(line);
+    });
+
+    $("results_card").style.display = "";
+  }
+
+  // ---------- Save/Load session (this browser) ----------
+  function snapshot(){
+    return {
+      payer: $("payer").value.trim(),
+      people: $("people").value,
+      tax: $("tax").value,
+      tip: $("tip").value,
+      allocation: $("allocation").value,
+      receipt_total: $("receipt_total").value,
+      auto_fix: $("auto_fix").checked,
+      items: items
+    };
+  }
+
+  function restore(s){
+    $("payer").value = s.payer || "";
+    $("people").value = s.people || "";
+    $("tax").value = s.tax ?? "0";
+    $("tip").value = s.tip ?? "0";
+    $("allocation").value = s.allocation || "proportional";
+    $("receipt_total").value = s.receipt_total ?? "";
+    $("auto_fix").checked = !!s.auto_fix;
+
+    items.length = 0;
+    (s.items || []).forEach(it => items.push(it));
+    makeChips();
+    refreshItemsTable();
+  }
+
+  $("save").addEventListener("click", () => {
+    localStorage.setItem("indisplit_session_v1", JSON.stringify(snapshot()));
+    $("status").textContent = "Saved session (this browser).";
+  });
+
+  $("load").addEventListener("click", () => {
+    const raw = localStorage.getItem("indisplit_session_v1");
+    if(!raw){ alert("No saved session found in this browser."); return; }
+    restore(JSON.parse(raw));
+    $("status").textContent = "Loaded session.";
+  });
+
+  $("export_json").addEventListener("click", () => {
+    download(`indisplit_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(snapshot(), null, 2));
+  });
+
+  // ---------- Wire up buttons ----------
+  $("make_people").addEventListener("click", () => {
+    makeChips();
+    $("status").textContent = "Refreshed people.";
+  });
+
+  $("it_kind").addEventListener("change", () => {
+    const k = $("it_kind").value;
+    $("person_wrap").style.display = (k === "person") ? "" : "none";
+    $("shared_wrap").style.display = (k === "shared") ? "" : "none";
+  });
+
+  $("add_item").addEventListener("click", () => {
+    if(people.length === 0) makeChips();
+
+    const desc = $("it_desc").value.trim();
+    const amtRaw = $("it_amt").value;
+    const kind = $("it_kind").value;
+
+    if(!desc){ alert("Description required"); return; }
+    if(amtRaw === "" || Number(amtRaw) < 0){ alert("Amount must be >= 0"); return; }
+
+    const item = { description: desc, amount: Number(amtRaw), kind };
+
+    if(kind === "person"){
+      const person = $("it_person").value;
+      if(!person){ alert("Pick a person"); return; }
+      item.person = person;
+    } else {
+      const wrap = $("shared_checkboxes");
+      const checks = wrap.querySelectorAll("input[type=checkbox]");
+      const shared = Array.from(checks).filter(c => c.checked).map(c => c.value);
+      if(shared.length === 0){ alert("Select at least 1 person to share with"); return; }
+      item.shared_with = shared;
+    }
+
+    items.push(item);
+    $("it_desc").value = "";
+    $("it_amt").value = "";
+    refreshItemsTable();
+  });
+
+  $("compute").addEventListener("click", () => {
+    try{
+      $("status").textContent = "Computing...";
+      const res = compute();
+      render(res);
+      $("status").textContent = "Done.";
+    } catch(e){
+      console.error(e);
+      $("status").textContent = "Error.";
+      alert(e.message || String(e));
+    }
+  });
+
+  $("load_demo").addEventListener("click", () => {
+    restore({
+      payer: "Ansh",
+      people: "", // blank => roster
+      tax: "6.32",
+      tip: "5.00",
+      allocation: "proportional",
+      receipt_total: "",
+      auto_fix: false,
+      items: [
+        {description:"Pav Bhaji", amount: 14.50, kind:"person", person:"Ansh"},
+        {description:"Biryani", amount: 23.00, kind:"person", person:"Craig"},
+        {description:"Paneer tikka", amount: 18.50, kind:"person", person:"Abhi"},
+        {description:"Masala chai", amount: 6.25, kind:"person", person:"Nate"},
+        {description:"Appetizer platter", amount: 14.00, kind:"shared", shared_with:["Ansh","Craig","Abhi"]}
+      ]
+    });
+    $("status").textContent = "Demo loaded.";
+  });
+
+  // ---------- Roster controls ----------
+  $("db_add_btn").addEventListener("click", () => {
+    const name = $("db_add_name").value.trim();
+    if(!name) return alert("Enter a name to add.");
+    addLocalName(name);
+    $("db_add_name").value = "";
+    makeChips();
+    $("status").textContent = `Added ${name} (local).`;
+  });
+
+  $("db_reset_btn").addEventListener("click", () => {
+    if(!confirm("Reset your local additions? Built-in roster stays.")) return;
+    resetLocalAdditions();
+    makeChips();
+    $("status").textContent = "Reset local additions.";
+  });
+
+  // ---------- Startup ----------
+  makeChips();
+  refreshItemsTable();
+</script>
+</body>
+</html>
