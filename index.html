@@ -5,186 +5,603 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Freefly IndiSplit</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 20px; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
-    .card { border: 1px solid #ddd; border-radius: 12px; padding: 14px; margin: 14px 0; }
-    label { display:block; font-size: 12px; color: #444; margin-bottom: 6px; }
-    input, select, button {
-      font: inherit; padding: 10px; border: 1px solid #ccc; border-radius: 10px;
+    /* ===== Design Tokens — Dark Theme ===== */
+    :root {
+      --primary: #6ea8fe;
+      --primary-dark: #4a8af5;
+      --primary-light: rgba(110,168,254,0.12);
+      --primary-ring: rgba(110,168,254,0.25);
+      --success: #63e6be;
+      --success-light: rgba(99,230,190,0.12);
+      --danger: #ff6b6b;
+      --danger-light: rgba(255,107,107,0.12);
+      --warn: #ffd43b;
+      --warn-light: rgba(255,212,59,0.1);
+      --bg: #0d1117;
+      --bg-raised: #161b22;
+      --surface: #1c2128;
+      --surface-hover: #242b35;
+      --text: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+      --border: #30363d;
+      --border-light: #21262d;
+      --shadow-1: 0 1px 4px rgba(0,0,0,0.3);
+      --shadow-2: 0 4px 16px rgba(0,0,0,0.4);
+      --shadow-3: 0 8px 32px rgba(0,0,0,0.5);
+      --radius-sm: 6px;
+      --radius: 8px;
+      --radius-lg: 12px;
+      --radius-pill: 999px;
+      --transition: 0.15s ease;
+      --font-mono: "SF Mono","Cascadia Code","Fira Code",ui-monospace,monospace;
     }
-    input[type="number"] { width: 150px; }
+
+    /* ===== Reset & Base ===== */
+    html { color-scheme: dark; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px; line-height: 1.6; color: var(--text);
+      background: var(--bg); margin: 0; padding: 24px 20px;
+    }
+    .app { max-width: 920px; margin: 0 auto; }
+
+    /* ===== Header ===== */
+    .app-header {
+      text-align: center; padding: 36px 0 28px; margin-bottom: 8px;
+    }
+    .app-header h1 {
+      font-size: 30px; font-weight: 800; margin: 0 0 10px;
+      background: linear-gradient(135deg, #6ea8fe, #a78bfa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .app-header__badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .app-header__subtitle { color: var(--text-secondary); font-size: 13px; margin: 0; }
+
+    /* ===== Cards ===== */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 20px 24px;
+      margin: 16px 0; box-shadow: var(--shadow-1);
+      animation: fadeIn 0.3s ease;
+    }
+    .card h2 {
+      font-size: 16px; font-weight: 700; margin: 0 0 6px;
+      padding-bottom: 0; border-bottom: none;
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text);
+    }
+    .card-help {
+      font-size: 12px; color: var(--text-muted); margin: 0 0 16px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border-light);
+      line-height: 1.5;
+    }
+    .card h3 { font-size: 14px; font-weight: 600; margin: 24px 0 8px; color: var(--text); }
+    .card h3 + .card-help { margin-top: 0; }
+
+    /* ===== Stepped Guide Numbers ===== */
+    .step-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--primary); color: var(--bg); font-size: 11px;
+      font-weight: 700; flex-shrink: 0;
+    }
+
+    /* ===== Layout ===== */
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .field { display: flex; flex-direction: column; }
+    .field--grow { flex: 1; min-width: 240px; }
+
+    /* ===== Labels ===== */
+    label, .label {
+      display: block; font-size: 12px; font-weight: 600;
+      color: var(--text-secondary); margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .field-hint {
+      font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;
+    }
+
+    /* ===== Inputs ===== */
+    input, select {
+      font: inherit; height: 40px; padding: 8px 12px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg-raised); color: var(--text);
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    input::placeholder { color: var(--text-muted); }
+    input:focus, select:focus {
+      outline: none; border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-ring);
+    }
+    select option { background: var(--surface); color: var(--text); }
+    input[type="number"] { width: 140px; font-variant-numeric: tabular-nums; }
     input[type="text"] { width: 240px; }
-    button { cursor: pointer; }
+    input.field-error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(255,107,107,0.15); }
+    .error-msg { color: var(--danger); font-size: 11px; margin-top: 4px; }
+    input[type="checkbox"] { width: auto; height: auto; accent-color: var(--primary); }
+
+    /* ===== Buttons ===== */
+    button {
+      font: inherit; cursor: pointer; border: none; border-radius: var(--radius);
+      transition: all var(--transition); display: inline-flex; align-items: center;
+      justify-content: center; gap: 6px;
+    }
+    .btn-primary {
+      background: var(--primary); color: var(--bg); padding: 10px 24px;
+      font-weight: 700; font-size: 14px;
+    }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-secondary {
+      background: var(--bg-raised); color: var(--text); padding: 10px 16px;
+      font-weight: 600; border: 1px solid var(--border); font-size: 13px;
+    }
+    .btn-secondary:hover { background: var(--surface-hover); border-color: var(--primary); color: var(--primary); }
+    .btn-danger {
+      background: var(--bg-raised); color: var(--danger); padding: 10px 16px;
+      font-weight: 600; border: 1px solid var(--border); font-size: 13px;
+    }
+    .btn-danger:hover { background: var(--danger-light); border-color: var(--danger); }
+    .btn-icon {
+      width: 32px; height: 32px; padding: 0; border-radius: 50%;
+      background: transparent; color: var(--text-secondary); font-size: 16px;
+    }
+    .btn-icon:hover { background: var(--surface-hover); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* ===== Pills & Chips ===== */
+    .pill {
+      display: inline-block; padding: 3px 10px; border-radius: var(--radius-pill);
+      font-size: 11px; font-weight: 600; background: var(--primary-light);
+      color: var(--primary); border: 1px solid rgba(110,168,254,0.2);
+    }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      border-radius: var(--radius-pill); padding: 6px 14px;
+      font-size: 13px; font-weight: 500; margin: 3px 4px 3px 0;
+      transition: all var(--transition);
+    }
+    .chip--active { background: var(--primary-light); color: var(--primary); }
+    .chip--builtin { background: var(--bg-raised); color: var(--text-secondary); border: 1px solid var(--border); }
+    .chip--removable { background: var(--primary-light); color: var(--primary); cursor: pointer; border: 1px solid rgba(110,168,254,0.2); }
+    .chip--removable:hover { background: rgba(110,168,254,0.2); }
+    .chip input[type="checkbox"] { margin: 0; }
+
+    /* ===== Tables ===== */
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
-    .muted { color:#666; font-size: 12px; }
-    .danger { color: #b00020; font-weight: 700; }
-    .ok { color: #0a7a2f; font-weight: 700; }
-    .pill { display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; margin-left: 8px;}
-    .right { text-align:right; }
-    .tiny { font-size: 11px; }
-    .btn { padding: 12px 16px; font-weight: 650; }
-    .btn2 { padding: 12px 16px; }
-    .chip { display:inline-flex; align-items:center; gap:6px; border:1px solid #ddd; border-radius:999px; padding:6px 10px; margin:4px 6px 0 0; }
-    .chip input { width:auto; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    thead th {
+      text-align: left; padding: 10px 14px; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-muted); font-weight: 700;
+      background: var(--bg-raised); border-bottom: 2px solid var(--border);
+    }
+    tbody td {
+      padding: 10px 14px; border-bottom: 1px solid var(--border-light);
+      font-size: 13px;
+    }
+    tbody tr { transition: background var(--transition); }
+    tbody tr:hover { background: var(--surface-hover); }
+    .right { text-align: right; }
+    .tabnum { font-variant-numeric: tabular-nums; }
+
+    /* ===== Toggle Switch ===== */
+    .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+    .toggle {
+      position: relative; width: 40px; height: 22px;
+      background: var(--border); border-radius: 11px;
+      cursor: pointer; transition: background var(--transition);
+    }
+    .toggle::after {
+      content: ""; position: absolute; width: 18px; height: 18px;
+      border-radius: 50%; background: var(--text-secondary); top: 2px; left: 2px;
+      transition: transform var(--transition), background var(--transition);
+    }
+    .toggle.active { background: var(--primary); }
+    .toggle.active::after { transform: translateX(18px); background: var(--bg); }
+
+    /* ===== Collapsible ===== */
+    .collapsible-header { cursor: pointer; user-select: none; }
+    .collapsible-header .chevron {
+      display: inline-block; width: 0; height: 0;
+      border-left: 5px solid transparent; border-right: 5px solid transparent;
+      border-top: 6px solid var(--text-secondary);
+      transition: transform 0.2s ease;
+    }
+    .collapsible-header.collapsed .chevron { transform: rotate(-90deg); }
+    .collapsible-body {
+      overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease;
+      max-height: 600px; opacity: 1;
+    }
+    .collapsible-body.collapsed { max-height: 0; opacity: 0; }
+
+    /* ===== Autocomplete ===== */
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-dropdown {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow-2);
+      max-height: 200px; overflow-y: auto; z-index: 20;
+      margin-top: 4px;
+    }
+    .autocomplete-item {
+      padding: 10px 14px; cursor: pointer; font-size: 13px;
+      display: flex; justify-content: space-between; align-items: center;
+      transition: background var(--transition);
+    }
+    .autocomplete-item:hover, .autocomplete-item.active { background: var(--primary-light); }
+    .autocomplete-item__desc { font-weight: 500; }
+    .autocomplete-item__amt { color: var(--text-muted); font-size: 12px; }
+
+    /* ===== Saved Items Bar ===== */
+    .saved-items-bar {
+      display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 12px;
+      margin-bottom: 8px; scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .saved-items-bar::-webkit-scrollbar { height: 4px; }
+    .saved-items-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .saved-item-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--bg-raised); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 6px 12px; white-space: nowrap;
+      cursor: pointer; font-size: 13px; transition: all var(--transition);
+      flex-shrink: 0;
+    }
+    .saved-item-chip:hover { border-color: var(--primary); background: var(--primary-light); }
+    .saved-item-chip__amt { color: var(--text-muted); font-size: 12px; }
+    .saved-item-chip__remove {
+      width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; font-size: 14px; color: var(--text-muted);
+      background: transparent; padding: 0; line-height: 1;
+    }
+    .saved-item-chip__remove:hover { background: var(--danger-light); color: var(--danger); }
+
+    /* ===== Action Bar ===== */
+    .action-bar {
+      display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+      margin: 20px 0; padding: 16px 0;
+    }
+    .action-bar__secondary { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ===== Results ===== */
+    .results-card { animation: slideUp 0.4s ease; }
+    .results-summary {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px; margin-bottom: 20px;
+    }
+    .summary-card {
+      background: var(--bg-raised); border-radius: var(--radius);
+      padding: 16px; text-align: center; border: 1px solid var(--border-light);
+    }
+    .summary-card__label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; }
+    .summary-card__value { font-size: 24px; font-weight: 800; margin-top: 4px; font-variant-numeric: tabular-nums; color: var(--text); }
+    .summary-card--primary .summary-card__value { color: var(--primary); }
+    .summary-card--success .summary-card__value { color: var(--success); }
+
+    /* Sanity Banner */
+    .sanity-banner { padding: 12px 16px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
+    .sanity-banner--ok { background: var(--success-light); color: var(--success); border: 1px solid rgba(99,230,190,0.2); }
+    .sanity-banner--warn { background: var(--danger-light); color: var(--danger); border: 1px solid rgba(255,107,107,0.2); }
+    .sanity-banner--info { background: var(--primary-light); color: var(--text-secondary); border: 1px solid rgba(110,168,254,0.15); }
+
+    /* Proportion Bar */
+    .proportion-bar-wrap { margin: 16px 0; }
+    .proportion-bar {
+      display: flex; height: 28px; border-radius: 14px; overflow: hidden;
+      background: var(--border);
+    }
+    .proportion-segment {
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap;
+      overflow: hidden; transition: width 0.5s ease; min-width: 0;
+      position: relative;
+    }
+    .proportion-segment:hover { filter: brightness(1.2); }
+    .proportion-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Share Cards */
+    .share-section { margin-top: 12px; }
+    .share-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .share-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; border-radius: var(--radius);
+      border: 1px solid var(--border-light); background: var(--bg-raised);
+      transition: all var(--transition);
+    }
+    .share-card:hover { border-color: var(--border); box-shadow: var(--shadow-1); }
+    .share-card__color { width: 4px; height: 36px; border-radius: 2px; flex-shrink: 0; }
+    .share-card__info { flex: 1; }
+    .share-card__name { font-weight: 600; font-size: 14px; color: var(--text); }
+    .share-card__amount { font-size: 20px; font-weight: 800; color: var(--primary); margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .share-card__copy { flex-shrink: 0; }
+
+    /* ===== Toast ===== */
+    .toast-container {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; display: flex; flex-direction: column; gap: 8px;
+      align-items: center; pointer-events: none;
+    }
+    .toast {
+      background: var(--surface-hover); color: var(--text); padding: 12px 24px;
+      border-radius: var(--radius); font-size: 14px; font-weight: 500;
+      box-shadow: var(--shadow-2); pointer-events: auto;
+      border: 1px solid var(--border);
+      animation: toastIn 0.3s ease;
+    }
+    .toast--success { background: rgba(99,230,190,0.15); color: var(--success); border-color: rgba(99,230,190,0.3); }
+    .toast--error { background: rgba(255,107,107,0.15); color: var(--danger); border-color: rgba(255,107,107,0.3); }
+    .toast.toast-out { animation: toastOut 0.25s ease forwards; }
+
+    /* ===== Modal ===== */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999; animation: fadeIn 0.2s ease;
+    }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px; max-width: 420px; width: 90%;
+      box-shadow: var(--shadow-3); animation: slideUp 0.3s ease;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+    .modal-body { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ===== Empty State ===== */
+    .empty-state { text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px; }
+
+    /* ===== Animations ===== */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes toastOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(16px); } }
+
+    /* ===== Utility ===== */
+    .muted { color: var(--text-secondary); font-size: 12px; }
+    .mono { font-family: var(--font-mono); }
+    .ok { color: var(--success); font-weight: 700; }
+    .danger { color: var(--danger); font-weight: 700; }
+    .kbd { display: inline-block; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 640px) {
+      body { padding: 16px 12px; }
+      .card { padding: 16px; }
+      .app-header h1 { font-size: 24px; }
+      input[type="text"], input[type="number"] { width: 100%; }
+      .row { flex-direction: column; }
+      .field--grow { min-width: 0; }
+      .results-summary { grid-template-columns: repeat(2, 1fr); }
+      .share-cards { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <h1>Freefly IndiSplit <span class="pill">static</span><span class="pill">itemized</span><span class="pill">sanity check</span></h1>
-  <div class="muted">Everything runs in your browser. Nothing is uploaded anywhere. Default roster is built-in; additions are saved locally in your browser.</div>
+<div class="app">
 
+  <!-- ===== Header ===== -->
+  <header class="app-header">
+    <h1>Freefly IndiSplit</h1>
+    <div class="app-header__badges">
+      <span class="pill">Offline</span>
+      <span class="pill">Itemized</span>
+      <span class="pill">Penny-perfect</span>
+    </div>
+    <p class="app-header__subtitle">Split restaurant bills fairly. Everything runs in your browser &mdash; nothing is uploaded anywhere.</p>
+  </header>
+
+  <!-- ===== Step 1: Split Configuration ===== -->
   <div class="card">
+    <h2><span class="step-num">1</span> Setup</h2>
+    <p class="card-help">Start here. Enter who paid the bill and who's splitting it, then add tax and tip from the receipt.</p>
     <div class="row">
-      <div>
-        <label>Payer</label>
-        <input id="payer" type="text" placeholder="Ansh" />
+      <div class="field">
+        <label>Who paid?</label>
+        <input id="payer" type="text" placeholder="e.g. Ansh" />
+        <div class="field-hint">The person who paid the full bill</div>
       </div>
-      <div style="flex:1; min-width: 320px;">
-        <label>People for this split (comma-separated) <span class="muted tiny">(leave blank to use the roster)</span></label>
-        <input id="people" type="text" placeholder="(blank = use roster)" style="width:100%;" />
+      <div class="field field--grow">
+        <label>Who's splitting?</label>
+        <input id="people" type="text" placeholder="Leave blank to use the full roster below" style="width:100%;" />
+        <div class="field-hint">Type names separated by commas, or leave blank to include everyone from the roster</div>
       </div>
-      <div>
-        <button id="make_people" class="btn2">Refresh</button>
+      <div class="field">
+        <button id="make_people" class="btn-secondary">Refresh</button>
+        <div class="field-hint">Update the people list</div>
       </div>
     </div>
 
     <div id="people_chips" style="margin-top:10px;"></div>
 
-    <div class="row" style="margin-top:12px;">
-      <div>
-        <label>Tax</label>
+    <div class="row" style="margin-top:16px;">
+      <div class="field">
+        <label>Tax ($)</label>
         <input id="tax" type="number" step="0.01" min="0" value="0" />
+        <div class="field-hint">Total tax from the receipt</div>
       </div>
-      <div>
-        <label>Tip</label>
+      <div class="field">
+        <label>Tip ($)</label>
         <input id="tip" type="number" step="0.01" min="0" value="0" />
+        <div class="field-hint">Tip amount (if any)</div>
       </div>
-      <div>
-        <label>Allocate tax+tip</label>
+      <div class="field">
+        <label>How to split extras</label>
         <select id="allocation">
           <option value="proportional" selected>Proportional to subtotal</option>
           <option value="equal">Equal split</option>
         </select>
+        <div class="field-hint">Proportional = people who ordered more pay more tax/tip</div>
       </div>
-      <div>
-        <label>Receipt grand total (optional)</label>
-        <input id="receipt_total" type="number" step="0.01" min="0" placeholder="e.g., 86.42" />
+      <div class="field">
+        <label>Receipt total ($)</label>
+        <input id="receipt_total" type="number" step="0.01" min="0" placeholder="e.g. 86.42" />
+        <div class="field-hint">Optional &mdash; used to double-check the math</div>
       </div>
-      <div>
-        <label class="tiny">Auto-fix mismatch</label>
-        <div class="muted tiny">Adjust tax to match receipt total</div>
-        <input id="auto_fix" type="checkbox" />
+      <div class="field">
+        <label>Auto-fix</label>
+        <div class="toggle-wrap">
+          <div class="toggle" id="auto_fix_toggle" title="Adjust tax to match receipt total"></div>
+          <span class="muted" style="font-size:11px;">Match receipt</span>
+        </div>
+        <div class="field-hint">Adjusts tax so total matches receipt</div>
+        <input id="auto_fix" type="checkbox" style="display:none;" />
       </div>
     </div>
   </div>
 
+  <!-- ===== Roster ===== -->
   <div class="card">
-    <h2 style="margin-top:0;">Roster (built-in + local additions)</h2>
-    <div class="muted">Everyone sees the built-in roster when they load the page. If you add names, they’re saved in <b>your</b> browser only.</div>
-
-    <div class="row" style="margin-top:10px;">
-      <div style="flex:1; min-width:320px;">
-        <label>Add person to roster (local)</label>
-        <input id="db_add_name" type="text" placeholder="e.g., Kyle" style="width:100%;" />
+    <h2 class="collapsible-header collapsed" id="roster_header">
+      <span class="chevron"></span> Roster
+    </h2>
+    <div class="collapsible-body collapsed" id="roster_body">
+      <p class="card-help" style="margin-top:0;">The built-in roster has the regular crew. Add more names here &mdash; they're saved in <b>your</b> browser only and will show up next time.</p>
+      <div class="row" style="margin-top:10px;">
+        <div class="field field--grow">
+          <label>New person</label>
+          <input id="db_add_name" type="text" placeholder="e.g. Kyle" style="width:100%;" />
+        </div>
+        <div class="field">
+          <button id="db_add_btn" class="btn-secondary">Add to Roster</button>
+        </div>
+        <div class="field">
+          <button id="db_reset_btn" class="btn-danger btn-sm">Reset My Additions</button>
+        </div>
       </div>
-      <div>
-        <button id="db_add_btn" class="btn2">Add</button>
+      <div style="margin-top:12px;">
+        <div class="muted" style="font-size:11px;margin-bottom:8px;">Click a local name to remove it (built-in names can't be removed):</div>
+        <div id="db_people_list"></div>
       </div>
-      <div>
-        <button id="db_reset_btn" class="btn2">Reset local additions</button>
-      </div>
-    </div>
-
-    <div style="margin-top:12px;">
-      <div class="muted tiny">Click a name to remove it from your local additions (built-in names can’t be removed):</div>
-      <div id="db_people_list" style="margin-top:8px;"></div>
     </div>
   </div>
 
+  <!-- ===== Step 2: Items ===== -->
   <div class="card">
-    <h2 style="margin-top:0;">Items</h2>
+    <h2><span class="step-num">2</span> Items</h2>
+    <p class="card-help">Add each item from the receipt. For each item, enter what it is, how much it costs, and who ordered it. If multiple people shared a dish, choose "Shared" and pick who split it. Previously added items appear below for quick re-use.</p>
+
+    <!-- Saved Items Bar -->
+    <div id="saved_items_bar" class="saved-items-bar"></div>
 
     <div class="row">
-      <div>
-        <label>Description</label>
-        <input id="it_desc" type="text" placeholder="Pav Bhaji" />
+      <div class="field autocomplete-wrap">
+        <label>What was ordered?</label>
+        <input id="it_desc" type="text" placeholder="e.g. Pav Bhaji" autocomplete="off" />
+        <div class="field-hint">Start typing to see suggestions from past items</div>
+        <div id="autocomplete_dropdown" class="autocomplete-dropdown" style="display:none;"></div>
       </div>
-      <div>
-        <label>Amount</label>
+      <div class="field">
+        <label>Price ($)</label>
         <input id="it_amt" type="number" step="0.01" min="0" placeholder="12.50" />
+        <div class="field-hint">Pre-tax price from the receipt</div>
       </div>
-      <div>
-        <label>Type</label>
+      <div class="field">
+        <label>Who's paying for it?</label>
         <select id="it_kind">
           <option value="person" selected>One person</option>
-          <option value="shared">Shared</option>
+          <option value="shared">Shared by multiple</option>
         </select>
+        <div class="field-hint">Choose "Shared" if the dish was split</div>
       </div>
-      <div id="person_wrap">
+      <div class="field" id="person_wrap">
         <label>Person</label>
         <select id="it_person"></select>
       </div>
-      <div id="shared_wrap" style="display:none; min-width: 360px;">
+      <div class="field" id="shared_wrap" style="display:none; min-width: 300px;">
         <label>Shared with</label>
-        <div id="shared_checkboxes" class="muted tiny">Click “Refresh” above first.</div>
+        <div id="shared_checkboxes" class="muted">Refresh people first.</div>
+        <div class="field-hint">Check everyone who shared this item &mdash; cost is split evenly</div>
       </div>
-      <div>
-        <button id="add_item" class="btn2">Add item</button>
+      <div class="field">
+        <button id="add_item" class="btn-primary btn-sm">+ Add Item</button>
       </div>
     </div>
 
-    <div style="margin-top:14px;">
+    <div style="margin-top:16px;">
       <table id="items_table">
         <thead>
           <tr>
-            <th>Description</th>
-            <th class="right">Amount</th>
-            <th>Assigned</th>
-            <th></th>
+            <th>Item</th>
+            <th class="right">Price</th>
+            <th>Who</th>
+            <th class="right" style="width:100px;"></th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
-      <div class="muted tiny" style="margin-top:10px;">
-        Shared items are split evenly among the selected people.
+      <div id="items_empty" class="empty-state">
+        No items yet. Add each dish/drink from the receipt above, or click a saved item to pre-fill the form.
       </div>
     </div>
   </div>
 
-  <div class="row">
-    <button id="compute" class="btn">Compute split</button>
-    <button id="save" class="btn2">Save</button>
-    <button id="load" class="btn2">Load</button>
-    <button id="load_demo" class="btn2">Load demo</button>
-    <button id="export_json" class="btn2">Export JSON</button>
-    <div id="status" class="muted" style="align-self:center;"></div>
+  <!-- ===== Step 3: Action Bar ===== -->
+  <div class="action-bar">
+    <button id="compute" class="btn-primary" style="padding:12px 32px; font-size:15px;"><span class="step-num" style="background:rgba(0,0,0,0.2);color:#fff;width:20px;height:20px;font-size:10px;">3</span> Compute Split</button>
+    <div class="action-bar__secondary">
+      <button id="save" class="btn-secondary" title="Save current session to browser (Ctrl+S)">Save</button>
+      <button id="load" class="btn-secondary" title="Load previously saved session">Load</button>
+      <button id="load_demo" class="btn-secondary" title="Load example data to see how it works">Demo</button>
+      <button id="export_json" class="btn-secondary" title="Download session as a JSON file">Export</button>
+    </div>
+    <div class="muted" style="align-self:center;">Tip: <span class="kbd">Ctrl+Enter</span> to compute, <span class="kbd">Ctrl+S</span> to save</div>
   </div>
 
-  <div class="card" id="results_card" style="display:none;">
-    <h2 style="margin-top:0;">Results</h2>
+  <!-- ===== Results ===== -->
+  <div class="card results-card" id="results_card" style="display:none;">
+    <h2>Results</h2>
+    <p class="card-help">Here's the breakdown. Each person's share includes their items plus their portion of tax and tip. Use the copy buttons to send people what they owe.</p>
+
+    <div id="results_summary" class="results-summary"></div>
     <div id="sanity"></div>
 
-    <h3>Per-person breakdown</h3>
+    <h3>Per-person Breakdown</h3>
+    <p class="card-help">Subtotal is the sum of their items. Tax + Tip is their share of extras. Total is what they owe in all.</p>
     <table id="results_table">
       <thead>
         <tr>
           <th>Person</th>
           <th class="right">Subtotal</th>
-          <th class="right">Tax+Tip</th>
-          <th class="right">Total share</th>
-          <th class="right">Owes payer</th>
+          <th class="right">Tax + Tip</th>
+          <th class="right">Total</th>
+          <th class="right">Owes Payer</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
 
-    <h3>Copy/paste notes</h3>
-    <div id="notes"></div>
+    <div id="proportion_wrap" class="proportion-bar-wrap"></div>
+
+    <h3>Send to People</h3>
+    <p class="card-help">Click "Copy" on any card to copy a ready-to-send message, or "Copy All" for everyone at once.</p>
+    <div class="share-section">
+      <div id="share_cards" class="share-cards"></div>
+      <button id="copy_all" class="btn-secondary btn-sm" style="margin-top:8px;">Copy All</button>
+    </div>
   </div>
 
+</div><!-- /.app -->
+
+<!-- Toast Container -->
+<div id="toast_container" class="toast-container"></div>
+
+<!-- Modal Overlay -->
+<div id="modal_overlay" class="modal-overlay" style="display:none;">
+  <div class="modal">
+    <div class="modal-title" id="modal_title"></div>
+    <div class="modal-body" id="modal_body"></div>
+    <div class="modal-actions" id="modal_actions"></div>
+  </div>
+</div>
+
 <script>
-  // ---------- Helpers ----------
+  // ========== Helpers ==========
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (str) => String(str).replace(/[&<>"']/g, m => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
@@ -203,13 +620,62 @@
     URL.revokeObjectURL(url);
   }
 
-  // ---------- Built-in roster (everyone sees these) ----------
+  // ========== Toast System ==========
+  function showToast(message, type = "info") {
+    const container = $("toast_container");
+    const toast = document.createElement("div");
+    toast.className = "toast" + (type === "success" ? " toast--success" : type === "error" ? " toast--error" : "");
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.add("toast-out");
+      toast.addEventListener("animationend", () => toast.remove());
+    }, 3000);
+  }
+
+  // ========== Modal System ==========
+  let _modalResolve = null;
+  function showModal(title, body, actions) {
+    return new Promise(resolve => {
+      _modalResolve = resolve;
+      $("modal_title").textContent = title;
+      $("modal_body").textContent = body;
+      const actionsEl = $("modal_actions");
+      actionsEl.innerHTML = "";
+      actions.forEach(({ label, value, cls }) => {
+        const btn = document.createElement("button");
+        btn.className = cls || "btn-secondary";
+        btn.textContent = label;
+        btn.onclick = () => { closeModal(); resolve(value); };
+        actionsEl.appendChild(btn);
+      });
+      $("modal_overlay").style.display = "";
+    });
+  }
+  function closeModal() {
+    $("modal_overlay").style.display = "none";
+  }
+  $("modal_overlay").addEventListener("click", (e) => {
+    if (e.target === $("modal_overlay")) {
+      closeModal();
+      if (_modalResolve) { _modalResolve(false); _modalResolve = null; }
+    }
+  });
+
+  // ========== Toggle Switch ==========
+  $("auto_fix_toggle").addEventListener("click", () => {
+    const cb = $("auto_fix");
+    cb.checked = !cb.checked;
+    $("auto_fix_toggle").classList.toggle("active", cb.checked);
+  });
+
+  // ========== Built-in roster ==========
   const BUILTIN_ROSTER = [
     "Ansh", "Craig", "Sandesh", "Peter", "Lukas", "Charlie", "Andrew",
     "Deniz", "James", "Abhi", "Harrison", "Gabe", "Nate"
   ];
 
-  // ---------- Local additions (saved per-browser) ----------
+  // ========== Local additions ==========
   const PEOPLE_LOCAL_KEY = "indisplit_people_local_additions_v1";
 
   function normName(s){ return String(s || "").trim(); }
@@ -248,10 +714,8 @@
   function addLocalName(name){
     const n = normName(name);
     if(!n) return;
-    // if it's already in builtin roster, don't store it as local addition
     const builtinLower = new Set(BUILTIN_ROSTER.map(x => x.toLowerCase()));
     if(builtinLower.has(n.toLowerCase())) return;
-
     const cur = loadLocalAdditions();
     cur.push(n);
     saveLocalAdditions(cur);
@@ -271,34 +735,169 @@
     return uniqSorted([...BUILTIN_ROSTER, ...loadLocalAdditions()]);
   }
 
-  // ---------- State ----------
+  // ========== Item Library ==========
+  const ITEM_LIBRARY_KEY = "indisplit_item_library_v1";
+
+  function loadItemLibrary(){
+    const raw = localStorage.getItem(ITEM_LIBRARY_KEY);
+    if(!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.sort((a,b) => (b.lastUsed || 0) - (a.lastUsed || 0)) : [];
+    } catch { return []; }
+  }
+
+  function saveItemLibrary(lib){
+    localStorage.setItem(ITEM_LIBRARY_KEY, JSON.stringify(lib));
+  }
+
+  function saveToItemLibrary(description, amount){
+    const lib = loadItemLibrary();
+    const key = description.toLowerCase().trim();
+    const existing = lib.find(x => x.description.toLowerCase().trim() === key);
+    if(existing){
+      existing.amount = amount;
+      existing.useCount = (existing.useCount || 0) + 1;
+      existing.lastUsed = Date.now();
+    } else {
+      lib.push({ description: description.trim(), amount, useCount: 1, lastUsed: Date.now() });
+    }
+    saveItemLibrary(lib);
+  }
+
+  function removeFromItemLibrary(description){
+    const lib = loadItemLibrary().filter(x => x.description.toLowerCase().trim() !== description.toLowerCase().trim());
+    saveItemLibrary(lib);
+  }
+
+  function getItemSuggestions(query){
+    if(!query || query.length < 2) return [];
+    const q = query.toLowerCase();
+    return loadItemLibrary()
+      .filter(x => x.description.toLowerCase().includes(q))
+      .sort((a,b) => (b.useCount || 0) - (a.useCount || 0))
+      .slice(0, 8);
+  }
+
+  // ========== State ==========
   const items = [];
   let people = [];
 
-  // ---------- UI: roster display + dropdowns ----------
+  // ========== Saved Items Bar ==========
+  function refreshSavedItemsBar(){
+    const bar = $("saved_items_bar");
+    const lib = loadItemLibrary().slice(0, 12);
+    bar.innerHTML = "";
+    if(lib.length === 0){
+      bar.innerHTML = '<span class="muted" style="font-size:12px;padding:4px 0;">Items you add will be remembered here for next time.</span>';
+      return;
+    }
+    lib.forEach(it => {
+      const chip = document.createElement("div");
+      chip.className = "saved-item-chip";
+      chip.title = "Click to fill the form with this item";
+      chip.innerHTML = `
+        <span class="saved-item-chip__desc">${escapeHtml(it.description)}</span>
+        <span class="saved-item-chip__amt">$${money(it.amount)}</span>
+        <button class="saved-item-chip__remove" title="Remove from saved items">&times;</button>
+      `;
+      chip.querySelector(".saved-item-chip__remove").addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeFromItemLibrary(it.description);
+        refreshSavedItemsBar();
+        showToast("Removed from saved items");
+      });
+      chip.addEventListener("click", (e) => {
+        if(e.target.classList.contains("saved-item-chip__remove")) return;
+        $("it_desc").value = it.description;
+        $("it_amt").value = it.amount;
+        $("it_desc").focus();
+        showToast(`Loaded "${it.description}" — pick who ordered it and click Add`, "info");
+      });
+      bar.appendChild(chip);
+    });
+  }
+
+  // ========== Autocomplete ==========
+  let acIndex = -1;
+  function showAutocomplete(suggestions){
+    const dd = $("autocomplete_dropdown");
+    if(suggestions.length === 0){ dd.style.display = "none"; acIndex = -1; return; }
+    dd.style.display = "";
+    acIndex = -1;
+    dd.innerHTML = "";
+    suggestions.forEach((s, i) => {
+      const item = document.createElement("div");
+      item.className = "autocomplete-item";
+      item.innerHTML = `<span class="autocomplete-item__desc">${escapeHtml(s.description)}</span><span class="autocomplete-item__amt">$${money(s.amount)}</span>`;
+      item.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        selectSuggestion(s);
+      });
+      dd.appendChild(item);
+    });
+  }
+
+  function selectSuggestion(s){
+    $("it_desc").value = s.description;
+    $("it_amt").value = s.amount;
+    $("autocomplete_dropdown").style.display = "none";
+    acIndex = -1;
+  }
+
+  $("it_desc").addEventListener("input", () => {
+    const val = $("it_desc").value;
+    showAutocomplete(getItemSuggestions(val));
+  });
+
+  $("it_desc").addEventListener("keydown", (e) => {
+    const dd = $("autocomplete_dropdown");
+    if(dd.style.display === "none") return;
+    const items_ac = dd.querySelectorAll(".autocomplete-item");
+    if(e.key === "ArrowDown"){
+      e.preventDefault();
+      acIndex = Math.min(acIndex + 1, items_ac.length - 1);
+      items_ac.forEach((el, i) => el.classList.toggle("active", i === acIndex));
+    } else if(e.key === "ArrowUp"){
+      e.preventDefault();
+      acIndex = Math.max(acIndex - 1, 0);
+      items_ac.forEach((el, i) => el.classList.toggle("active", i === acIndex));
+    } else if(e.key === "Enter" && acIndex >= 0){
+      e.preventDefault();
+      const lib = getItemSuggestions($("it_desc").value);
+      if(lib[acIndex]) selectSuggestion(lib[acIndex]);
+    } else if(e.key === "Escape"){
+      dd.style.display = "none"; acIndex = -1;
+    }
+  });
+
+  $("it_desc").addEventListener("blur", () => {
+    setTimeout(() => { $("autocomplete_dropdown").style.display = "none"; acIndex = -1; }, 150);
+  });
+
+  // ========== UI: roster display + dropdowns ==========
   function refreshRosterUI(){
     const dbWrap = $("db_people_list");
     if(!dbWrap) return;
-
     const roster = getRoster();
     const builtinLower = new Set(BUILTIN_ROSTER.map(x => x.toLowerCase()));
     dbWrap.innerHTML = "";
-
     roster.forEach(name => {
       const chip = document.createElement("span");
-      chip.className = "chip";
-      chip.style.cursor = builtinLower.has(name.toLowerCase()) ? "default" : "pointer";
-      chip.title = builtinLower.has(name.toLowerCase())
-        ? "Built-in roster"
-        : "Click to remove from your local additions";
+      const isBuiltin = builtinLower.has(name.toLowerCase());
+      chip.className = "chip " + (isBuiltin ? "chip--builtin" : "chip--removable");
+      chip.title = isBuiltin ? "Built-in (cannot remove)" : "Click to remove";
       chip.textContent = name;
-
-      if(!builtinLower.has(name.toLowerCase())){
-        chip.onclick = () => {
-          if(confirm(`Remove "${name}" from your local additions?`)){
+      if(!isBuiltin){
+        chip.onclick = async () => {
+          const yes = await showModal("Remove Person", `Remove "${name}" from your local additions?`, [
+            { label: "Cancel", value: false, cls: "btn-secondary" },
+            { label: "Remove", value: true, cls: "btn-danger" }
+          ]);
+          if(yes){
             removeLocalName(name);
             makeChips();
-            $("status").textContent = `Removed ${name}.`;
+            showToast(`Removed ${name}`, "info");
           }
         };
       }
@@ -307,7 +906,6 @@
   }
 
   function refreshPeopleUI(){
-    // Person dropdown
     const sel = $("it_person");
     sel.innerHTML = "";
     people.forEach(p => {
@@ -315,69 +913,72 @@
       opt.value = p; opt.textContent = p;
       sel.appendChild(opt);
     });
-
-    // Shared checkboxes
     const wrap = $("shared_checkboxes");
     wrap.innerHTML = "";
     if(people.length === 0){
-      wrap.textContent = "Click “Refresh” above first.";
+      wrap.innerHTML = '<span class="muted">Click "Refresh" in Step 1 first.</span>';
       return;
     }
     people.forEach(p => {
-      const label = document.createElement("label");
-      label.className = "chip";
-      label.innerHTML = `<input type="checkbox" value="${escapeHtml(p)}" checked /> ${escapeHtml(p)}`;
-      wrap.appendChild(label);
+      const lbl = document.createElement("label");
+      lbl.className = "chip chip--active";
+      lbl.style.cursor = "pointer";
+      lbl.innerHTML = `<input type="checkbox" value="${escapeHtml(p)}" checked /> ${escapeHtml(p)}`;
+      wrap.appendChild(lbl);
     });
   }
 
   function makeChips(){
     const roster = getRoster();
-
-    // If user typed names in the People field, use them; otherwise use roster
     const typed = parsePeople($("people").value);
     const payer = $("payer").value.trim();
-
     let active = typed.length ? typed : roster;
-
-    // Ensure payer is included if present
     if(payer && !active.some(x => x.toLowerCase() === payer.toLowerCase())) active.push(payer);
-
     people = uniqSorted(active);
-
-    // Render chips
     const chips = $("people_chips");
     chips.innerHTML = "";
     people.forEach(p => {
       const span = document.createElement("span");
-      span.className = "chip";
-      span.innerHTML = `${escapeHtml(p)}`;
+      span.className = "chip chip--active";
+      span.textContent = p;
       chips.appendChild(span);
     });
-
     refreshPeopleUI();
     refreshRosterUI();
   }
 
-  // ---------- Items table ----------
+  // ========== Items table ==========
   function refreshItemsTable(){
     const tbody = $("items_table").querySelector("tbody");
     tbody.innerHTML = "";
+    $("items_empty").style.display = items.length === 0 ? "" : "none";
+    $("items_table").querySelector("thead").style.display = items.length === 0 ? "none" : "";
     items.forEach((it, idx) => {
       const assigned = it.kind === "person"
         ? it.person
-        : `shared: ${it.shared_with.join(", ")}`;
+        : `Shared: ${it.shared_with.join(", ")}`;
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${escapeHtml(it.description)}</td>
-        <td class="right">$${money(it.amount)}</td>
-        <td>${escapeHtml(assigned)}</td>
-        <td class="right"><button data-idx="${idx}">Remove</button></td>
+        <td class="right tabnum">$${money(it.amount)}</td>
+        <td style="font-size:12px;color:var(--text-secondary);">${escapeHtml(assigned)}</td>
+        <td class="right">
+          <button class="btn-icon" data-dup="${idx}" title="Duplicate — fill form with this item">&#x2398;</button>
+          <button class="btn-icon" data-idx="${idx}" title="Remove this item">&times;</button>
+        </td>
       `;
-      tr.querySelector("button").onclick = (e) => {
-        const i = Number(e.target.getAttribute("data-idx"));
+      tr.querySelector("[data-idx]").onclick = (e) => {
+        const i = Number(e.currentTarget.getAttribute("data-idx"));
         items.splice(i, 1);
         refreshItemsTable();
+      };
+      tr.querySelector("[data-dup]").onclick = (e) => {
+        const i = Number(e.currentTarget.getAttribute("data-dup"));
+        const src = items[i];
+        $("it_desc").value = src.description;
+        $("it_amt").value = src.amount;
+        $("it_desc").focus();
+        showToast(`Duplicated "${src.description}" — pick a person and click Add`, "info");
       };
       tbody.appendChild(tr);
     });
@@ -389,18 +990,18 @@
     return Array.from(checks).filter(c => c.checked).map(c => c.value);
   }
 
-  // ---------- Core math (all in cents) ----------
+  // ========== Core math (all in cents) ==========
   function compute(){
     const payer = $("payer").value.trim();
     let ppl = parsePeople($("people").value);
-    if(ppl.length === 0) ppl = getRoster(); // blank => roster
+    if(ppl.length === 0) ppl = getRoster();
     if(payer && !ppl.some(x => x.toLowerCase() === payer.toLowerCase())) ppl.push(payer);
 
-    if(!payer) throw new Error("Payer is required.");
-    if(ppl.length === 0) throw new Error("Add at least one person.");
+    if(!payer) throw new Error("Enter who paid the bill in Step 1.");
+    if(ppl.length === 0) throw new Error("Add at least one person in Step 1.");
+    if(items.length === 0) throw new Error("Add at least one item in Step 2.");
     const pplSet = new Set(ppl.map(x => x.toLowerCase()));
 
-    // Subtotals in cents
     const subtotals = Object.fromEntries(ppl.map(p => [p, 0]));
 
     let itemsTotalC = 0;
@@ -410,23 +1011,17 @@
 
       if(it.kind === "person"){
         const key = String(it.person || "").toLowerCase();
-        if(!pplSet.has(key)) throw new Error(`Unknown person in item: ${it.person}`);
-        // find canonical name in ppl
+        if(!pplSet.has(key)) throw new Error(`"${it.person}" is not in the people list. Check Step 1.`);
         const canon = ppl.find(x => x.toLowerCase() === key);
         subtotals[canon] += amtC;
-
       } else {
         const shared = (it.shared_with || []).map(x => String(x || "").trim()).filter(Boolean);
-        if(shared.length === 0) throw new Error(`Shared item has no people: ${it.description}`);
-
+        if(shared.length === 0) throw new Error(`Shared item "${it.description}" has no one assigned.`);
         shared.forEach(p => {
-          if(!pplSet.has(p.toLowerCase())) throw new Error(`Unknown person in shared item: ${p}`);
+          if(!pplSet.has(p.toLowerCase())) throw new Error(`"${p}" in shared item "${it.description}" is not in the people list.`);
         });
-
-        // Split evenly in cents; distribute remainder cents to first N people
         const shareC = Math.floor(amtC / shared.length);
         let remainder = amtC - shareC * shared.length;
-
         shared.forEach(p => {
           const canon = ppl.find(x => x.toLowerCase() === p.toLowerCase());
           subtotals[canon] += shareC + (remainder > 0 ? 1 : 0);
@@ -437,28 +1032,23 @@
 
     let taxC = toCents($("tax").value || 0);
     const tipC = toCents($("tip").value || 0);
-
     const receiptRaw = $("receipt_total").value;
     const receiptC = (receiptRaw !== "" ? toCents(receiptRaw) : null);
-
     let computedGrandC = itemsTotalC + taxC + tipC;
 
-    // sanity + optional autofix (adjust tax)
     let mismatchC = null;
     if(receiptC !== null){
       mismatchC = receiptC - computedGrandC;
       if($("auto_fix").checked && mismatchC !== 0){
         taxC += mismatchC;
-        if(taxC < 0) throw new Error("Auto-fix would make tax negative. Check receipt inputs.");
+        if(taxC < 0) throw new Error("Auto-fix would make tax negative. Double-check the receipt total and item prices.");
         computedGrandC = itemsTotalC + taxC + tipC;
-        mismatchC = receiptC - computedGrandC; // should be 0
+        mismatchC = receiptC - computedGrandC;
       }
     }
 
-    // allocate extras
     const extrasC = taxC + tipC;
     const mode = $("allocation").value;
-
     const extrasAlloc = Object.fromEntries(ppl.map(p => [p, 0]));
     if(extrasC !== 0){
       if(mode === "equal"){
@@ -478,7 +1068,6 @@
             if(rem > 0) rem -= 1;
           });
         } else {
-          // proportional with rounding
           let assigned = 0;
           const frac = ppl.map(p => {
             const raw = extrasC * (subtotals[p] / base);
@@ -497,10 +1086,7 @@
       }
     }
 
-    // total shares
     const totalShare = Object.fromEntries(ppl.map(p => [p, subtotals[p] + extrasAlloc[p]]));
-
-    // reconcile grand total
     const totalShareSum = Object.values(totalShare).reduce((a,b)=>a+b,0);
     const diff = computedGrandC - totalShareSum;
     if(diff !== 0){
@@ -512,81 +1098,130 @@
       extrasAlloc[target] += diff;
     }
 
-    // owes payer
     const owes = Object.fromEntries(ppl.map(p => [p, (p.toLowerCase() === payer.toLowerCase() ? 0 : totalShare[p])]));
 
     return {
-      payer,
-      people: ppl,
+      payer, people: ppl,
       itemsTotalC, taxC, tipC, computedGrandC,
       receiptC, mismatchC,
       subtotals, extrasAlloc, totalShare, owes
     };
   }
 
-  function render(result){
-    const {payer, people, itemsTotalC, computedGrandC, receiptC, mismatchC, subtotals, extrasAlloc, totalShare, owes} = result;
+  // ========== Proportion Bar Colors ==========
+  const BAR_COLORS = ["#6ea8fe","#e8710a","#63e6be","#a78bfa","#ff6b6b","#38d9a9","#f06595","#a1887f","#74c0fc","#ffd43b","#66d9e8","#c0eb75","#748ffc","#e599f7"];
 
-    // sanity
-    const sanity = $("sanity");
-    sanity.innerHTML = "";
-    let html = `
-      <div class="row">
-        <div><b>Items total:</b> $${money(fromCents(itemsTotalC))}</div>
-        <div><b>Computed grand total:</b> $${money(fromCents(computedGrandC))}</div>
+  // ========== Render Results ==========
+  function render(result){
+    const {payer, people, itemsTotalC, taxC, tipC, computedGrandC, receiptC, mismatchC, subtotals, extrasAlloc, totalShare, owes} = result;
+
+    // Summary cards
+    const summary = $("results_summary");
+    const extrasTotal = taxC + tipC;
+    summary.innerHTML = `
+      <div class="summary-card">
+        <div class="summary-card__label">Items</div>
+        <div class="summary-card__value">$${money(fromCents(itemsTotalC))}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card__label">Tax + Tip</div>
+        <div class="summary-card__value">$${money(fromCents(extrasTotal))}</div>
+      </div>
+      <div class="summary-card summary-card--primary">
+        <div class="summary-card__label">Grand Total</div>
+        <div class="summary-card__value">$${money(fromCents(computedGrandC))}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card__label">People</div>
+        <div class="summary-card__value">${people.length}</div>
       </div>
     `;
+
+    // Sanity banner
+    const sanity = $("sanity");
     if(receiptC !== null){
       const ok = (mismatchC === 0);
-      html += `
-        <div style="margin-top:8px;">
-          <b>Receipt grand total:</b> $${money(fromCents(receiptC))}
-          <span class="${ok ? "ok" : "danger"}">
-            ${ok ? "✓ matches" : `✗ mismatch: $${money(fromCents(mismatchC))}`}
-          </span>
-        </div>
-      `;
-      if(!ok){
-        html += `<div class="muted tiny">Turn on Auto-fix to adjust tax to match receipt total.</div>`;
+      if(ok){
+        sanity.className = "sanity-banner sanity-banner--ok";
+        sanity.innerHTML = `Receipt total matches: <b>$${money(fromCents(receiptC))}</b>`;
+      } else {
+        sanity.className = "sanity-banner sanity-banner--warn";
+        sanity.innerHTML = `<b>Mismatch:</b> Receipt says $${money(fromCents(receiptC))} but items + tax + tip = $${money(fromCents(computedGrandC))} (off by $${money(Math.abs(fromCents(mismatchC)))}). Try enabling Auto-fix in Step 1.`;
       }
     } else {
-      html += `<div class="muted tiny" style="margin-top:8px;">Add receipt grand total for a sanity check.</div>`;
+      sanity.className = "sanity-banner sanity-banner--info";
+      sanity.innerHTML = "Tip: Enter the receipt total in Step 1 to double-check the math.";
     }
-    sanity.innerHTML = html;
 
-    // results table
+    // Results table
     const tbody = $("results_table").querySelector("tbody");
     tbody.innerHTML = "";
-
     const sorted = [...people].sort((a,b)=>a.localeCompare(b));
     sorted.forEach(p => {
+      const isPayer = p.toLowerCase() === payer.toLowerCase();
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${escapeHtml(p)} ${p.toLowerCase()===payer.toLowerCase()?'<span class="pill">payer</span>':''}</td>
-        <td class="right">$${money(fromCents(subtotals[p]))}</td>
-        <td class="right">$${money(fromCents(extrasAlloc[p]))}</td>
-        <td class="right"><b>$${money(fromCents(totalShare[p]))}</b></td>
-        <td class="right">${p.toLowerCase()===payer.toLowerCase()?'-':`<b>$${money(fromCents(owes[p]))}</b>`}</td>
+        <td>${escapeHtml(p)} ${isPayer ? '<span class="pill" style="font-size:10px;">payer</span>' : ''}</td>
+        <td class="right tabnum">$${money(fromCents(subtotals[p]))}</td>
+        <td class="right tabnum">$${money(fromCents(extrasAlloc[p]))}</td>
+        <td class="right tabnum" style="font-weight:700;">$${money(fromCents(totalShare[p]))}</td>
+        <td class="right tabnum" style="font-weight:700;">${isPayer ? '<span style="color:var(--text-muted);">&#8212;</span>' : '$'+money(fromCents(owes[p]))}</td>
       `;
       tbody.appendChild(tr);
     });
 
-    // notes
-    const notes = $("notes");
-    notes.innerHTML = "";
-    sorted.forEach(p => {
+    // Proportion bar
+    const propWrap = $("proportion_wrap");
+    const grandC = computedGrandC || 1;
+    let barHtml = '<div class="proportion-bar">';
+    let legendHtml = '<div class="proportion-legend">';
+    sorted.forEach((p, i) => {
+      const pct = ((totalShare[p] / grandC) * 100);
+      const color = BAR_COLORS[i % BAR_COLORS.length];
+      barHtml += `<div class="proportion-segment" style="width:${pct.toFixed(1)}%;background:${color};" title="${escapeHtml(p)}: $${money(fromCents(totalShare[p]))}">${pct > 8 ? escapeHtml(p) : ''}</div>`;
+      legendHtml += `<div class="legend-item"><span class="legend-dot" style="background:${color};"></span>${escapeHtml(p)} $${money(fromCents(totalShare[p]))}</div>`;
+    });
+    barHtml += '</div>';
+    legendHtml += '</div>';
+    propWrap.innerHTML = barHtml + legendHtml;
+
+    // Share cards
+    const shareCards = $("share_cards");
+    shareCards.innerHTML = "";
+    const oweLines = [];
+    sorted.forEach((p, i) => {
       if(p.toLowerCase() === payer.toLowerCase()) return;
       const amt = money(fromCents(owes[p]));
-      const line = document.createElement("div");
-      line.style.marginBottom = "8px";
-      line.innerHTML = `<b>${escapeHtml(p)}:</b> <span class="muted mono">${escapeHtml(p)} owes ${escapeHtml(payer)} $${amt} (Freefly IndiSplit)</span>`;
-      notes.appendChild(line);
+      const msg = `${p} owes ${payer} $${amt} (Freefly IndiSplit)`;
+      oweLines.push(msg);
+      const color = BAR_COLORS[i % BAR_COLORS.length];
+      const card = document.createElement("div");
+      card.className = "share-card";
+      card.innerHTML = `
+        <div class="share-card__color" style="background:${color};"></div>
+        <div class="share-card__info">
+          <div class="share-card__name">${escapeHtml(p)}</div>
+          <div class="share-card__amount">$${amt}</div>
+        </div>
+        <button class="btn-secondary btn-sm share-card__copy" data-msg="${escapeHtml(msg)}">Copy</button>
+      `;
+      card.querySelector(".share-card__copy").addEventListener("click", (e) => {
+        const text = e.currentTarget.getAttribute("data-msg");
+        navigator.clipboard.writeText(text).then(() => showToast("Copied!", "success"));
+      });
+      shareCards.appendChild(card);
     });
 
+    // Copy All
+    $("copy_all").onclick = () => {
+      navigator.clipboard.writeText(oweLines.join("\n")).then(() => showToast("All copied!", "success"));
+    };
+
     $("results_card").style.display = "";
+    $("results_card").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  // ---------- Save/Load session (this browser) ----------
+  // ========== Save/Load session ==========
   function snapshot(){
     return {
       payer: $("payer").value.trim(),
@@ -608,6 +1243,7 @@
     $("allocation").value = s.allocation || "proportional";
     $("receipt_total").value = s.receipt_total ?? "";
     $("auto_fix").checked = !!s.auto_fix;
+    $("auto_fix_toggle").classList.toggle("active", !!s.auto_fix);
 
     items.length = 0;
     (s.items || []).forEach(it => items.push(it));
@@ -617,24 +1253,25 @@
 
   $("save").addEventListener("click", () => {
     localStorage.setItem("indisplit_session_v1", JSON.stringify(snapshot()));
-    $("status").textContent = "Saved session (this browser).";
+    showToast("Session saved to this browser", "success");
   });
 
   $("load").addEventListener("click", () => {
     const raw = localStorage.getItem("indisplit_session_v1");
-    if(!raw){ alert("No saved session found in this browser."); return; }
+    if(!raw){ showToast("No saved session found in this browser", "error"); return; }
     restore(JSON.parse(raw));
-    $("status").textContent = "Loaded session.";
+    showToast("Session loaded", "success");
   });
 
   $("export_json").addEventListener("click", () => {
     download(`indisplit_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(snapshot(), null, 2));
+    showToast("Downloaded as JSON", "success");
   });
 
-  // ---------- Wire up buttons ----------
+  // ========== Wire up buttons ==========
   $("make_people").addEventListener("click", () => {
     makeChips();
-    $("status").textContent = "Refreshed people.";
+    showToast("People list updated");
   });
 
   $("it_kind").addEventListener("change", () => {
@@ -650,46 +1287,54 @@
     const amtRaw = $("it_amt").value;
     const kind = $("it_kind").value;
 
-    if(!desc){ alert("Description required"); return; }
-    if(amtRaw === "" || Number(amtRaw) < 0){ alert("Amount must be >= 0"); return; }
+    // Inline validation
+    let valid = true;
+    $("it_desc").classList.remove("field-error");
+    $("it_amt").classList.remove("field-error");
+    if(!desc){ $("it_desc").classList.add("field-error"); showToast("Enter a description (e.g. 'Pav Bhaji')", "error"); valid = false; }
+    if(amtRaw === "" || Number(amtRaw) < 0){ $("it_amt").classList.add("field-error"); showToast("Enter the price from the receipt", "error"); valid = false; }
+    if(!valid) return;
 
     const item = { description: desc, amount: Number(amtRaw), kind };
 
     if(kind === "person"){
       const person = $("it_person").value;
-      if(!person){ alert("Pick a person"); return; }
+      if(!person){ showToast("Pick who ordered this item", "error"); return; }
       item.person = person;
     } else {
-      const wrap = $("shared_checkboxes");
-      const checks = wrap.querySelectorAll("input[type=checkbox]");
-      const shared = Array.from(checks).filter(c => c.checked).map(c => c.value);
-      if(shared.length === 0){ alert("Select at least 1 person to share with"); return; }
+      const shared = getSharedSelected();
+      if(shared.length === 0){ showToast("Check at least 1 person who shared this item", "error"); return; }
       item.shared_with = shared;
     }
 
     items.push(item);
+    saveToItemLibrary(desc, Number(amtRaw));
     $("it_desc").value = "";
     $("it_amt").value = "";
     refreshItemsTable();
+    refreshSavedItemsBar();
+    showToast(`Added "${desc}"`, "success");
   });
+
+  // Clear field error on focus
+  $("it_desc").addEventListener("focus", () => $("it_desc").classList.remove("field-error"));
+  $("it_amt").addEventListener("focus", () => $("it_amt").classList.remove("field-error"));
 
   $("compute").addEventListener("click", () => {
     try{
-      $("status").textContent = "Computing...";
       const res = compute();
       render(res);
-      $("status").textContent = "Done.";
+      showToast("Split computed!", "success");
     } catch(e){
       console.error(e);
-      $("status").textContent = "Error.";
-      alert(e.message || String(e));
+      showToast(e.message || String(e), "error");
     }
   });
 
   $("load_demo").addEventListener("click", () => {
     restore({
       payer: "Ansh",
-      people: "", // blank => roster
+      people: "",
       tax: "6.32",
       tip: "5.00",
       allocation: "proportional",
@@ -703,29 +1348,57 @@
         {description:"Appetizer platter", amount: 14.00, kind:"shared", shared_with:["Ansh","Craig","Abhi"]}
       ]
     });
-    $("status").textContent = "Demo loaded.";
+    showToast("Demo loaded — try clicking Compute Split!", "info");
   });
 
-  // ---------- Roster controls ----------
+  // ========== Roster controls ==========
   $("db_add_btn").addEventListener("click", () => {
     const name = $("db_add_name").value.trim();
-    if(!name) return alert("Enter a name to add.");
+    if(!name){ showToast("Type a name to add", "error"); return; }
     addLocalName(name);
     $("db_add_name").value = "";
     makeChips();
-    $("status").textContent = `Added ${name} (local).`;
+    showToast(`Added ${name} to roster`, "success");
   });
 
-  $("db_reset_btn").addEventListener("click", () => {
-    if(!confirm("Reset your local additions? Built-in roster stays.")) return;
-    resetLocalAdditions();
-    makeChips();
-    $("status").textContent = "Reset local additions.";
+  $("db_reset_btn").addEventListener("click", async () => {
+    const yes = await showModal("Reset Roster", "Remove all your local additions? The built-in names will stay.", [
+      { label: "Cancel", value: false, cls: "btn-secondary" },
+      { label: "Reset", value: true, cls: "btn-danger" }
+    ]);
+    if(yes){
+      resetLocalAdditions();
+      makeChips();
+      showToast("Local additions cleared", "info");
+    }
   });
 
-  // ---------- Startup ----------
+  // ========== Collapsible Roster ==========
+  $("roster_header").addEventListener("click", () => {
+    $("roster_header").classList.toggle("collapsed");
+    $("roster_body").classList.toggle("collapsed");
+  });
+
+  // ========== Keyboard Shortcuts ==========
+  document.addEventListener("keydown", (e) => {
+    if((e.ctrlKey || e.metaKey) && e.key === "Enter"){
+      e.preventDefault();
+      $("compute").click();
+    }
+    if((e.ctrlKey || e.metaKey) && e.key === "s"){
+      e.preventDefault();
+      $("save").click();
+    }
+    if(e.key === "Escape"){
+      closeModal();
+      $("autocomplete_dropdown").style.display = "none";
+    }
+  });
+
+  // ========== Startup ==========
   makeChips();
   refreshItemsTable();
+  refreshSavedItemsBar();
 </script>
 </body>
 </html>
