@@ -90,20 +90,28 @@
     }
 
     /* ===== Inputs ===== */
-    input {
-      font: inherit; font-size: 16px; height: 44px; padding: 8px 12px;
+    input, select, textarea {
+      font: inherit; font-size: 16px; padding: 8px 12px;
       border: 1px solid var(--border); border-radius: var(--radius);
       background: var(--bg-raised); color: var(--text); width: 100%;
       transition: border-color var(--transition), box-shadow var(--transition);
     }
-    input::placeholder { color: var(--text-muted); }
-    input:focus {
+    input, select { height: 44px; }
+    select {
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      cursor: pointer; padding-right: 36px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238b949e' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+    }
+    select option { background: var(--surface); color: var(--text); }
+    textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+    input::placeholder, textarea::placeholder { color: var(--text-muted); }
+    input:focus, select:focus, textarea:focus {
       outline: none; border-color: var(--primary);
       box-shadow: 0 0 0 3px var(--primary-ring);
     }
-    input[type="number"] { font-variant-numeric: tabular-nums; }
-    input.field-error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(255,107,107,0.15); }
-    input:disabled { opacity: 0.5; cursor: not-allowed; }
+    input.field-error, select.field-error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(255,107,107,0.15); }
+    input:disabled, select:disabled, textarea:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* ===== Buttons ===== */
     button {
@@ -157,11 +165,24 @@
       border-radius: var(--radius); padding: 12px; margin-bottom: 10px;
       animation: fadeIn 0.2s ease;
     }
-    .item-row input { background: var(--surface); }
+    .item-row input, .item-row select { background: var(--surface); }
     .item-row__top { display: flex; gap: 8px; align-items: center; }
-    .item-row__bottom { display: flex; gap: 8px; margin-top: 8px; }
-    .item-row__price { flex: 0 0 128px; }
-    .item-row__note { flex: 1; min-width: 0; }
+    .item-row__top select { flex: 1; min-width: 0; }
+    .item-row__custom { margin-top: 8px; }
+
+    /* ===== Box preview (smart lunchbox summary) ===== */
+    .box-preview {
+      margin-top: 12px; padding: 12px 14px; border-radius: var(--radius);
+      background: var(--primary-light); border: 1px solid rgba(110,168,254,0.2);
+      font-size: 13px; line-height: 1.6;
+    }
+    .box-preview .bp-line { color: var(--text); }
+    .box-preview .bp-line + .bp-line { margin-top: 4px; }
+    .box-preview .bp-emoji { font-style: normal; }
+    .box-preview .bp-extra { color: var(--text-secondary); }
+    .box-preview .bp-warn {
+      color: var(--warn); margin-top: 6px; font-size: 12px;
+    }
 
     /* ===== Submitted order / list rows ===== */
     .order-row {
@@ -172,7 +193,11 @@
     .order-row__name { font-weight: 700; font-size: 14px; color: var(--text); }
     .order-row__item { font-size: 13px; color: var(--text-secondary); padding-left: 12px; }
     .order-row__item .amt { color: var(--text-muted); font-variant-numeric: tabular-nums; }
-    .order-row__item .note { color: var(--text-muted); }
+    .order-row__note {
+      font-size: 12px; color: var(--warn); padding-left: 12px; margin-top: 2px;
+      font-style: italic;
+    }
+    .order-row__note::before { content: "\1F4DD  "; font-style: normal; }
 
     .submitted-box {
       background: var(--bg-raised); border: 1px solid var(--border-light);
@@ -268,14 +293,18 @@
 
       <!-- Form state -->
       <div id="form_view">
-        <p class="card-help" id="form_help">Tell us who you are and what you want. Price is optional &mdash; the organizer fills it in from the receipt later.</p>
+        <p class="card-help" id="form_help">Tell us who you are and what you'd like in your box. Pick as many items as you want &mdash; no need to worry about price, the organizer sorts that out from the receipt.</p>
         <label for="my_name">Your name</label>
         <input id="my_name" type="text" list="regulars" placeholder="e.g. Ansh" autocomplete="off" />
         <datalist id="regulars"></datalist>
 
-        <div class="label" style="margin-top:18px;">Items</div>
+        <div class="label" style="margin-top:18px;">What's in your box?</div>
         <div id="item_rows"></div>
         <button id="add_row_btn" class="btn-secondary btn-block" type="button">+ Add another item</button>
+        <div id="box_preview" class="box-preview" style="display:none;"></div>
+
+        <label for="order_note" style="margin-top:18px;">Order notes <span style="text-transform:none;font-weight:400;color:var(--text-muted);">(optional)</span></label>
+        <textarea id="order_note" maxlength="280" placeholder="e.g. no onions in the butter chicken, extra spicy goat curry — anything the kitchen should know"></textarea>
 
         <button id="submit_btn" class="btn-primary" type="button" style="margin-top:16px;">Place order &#x1F37D;</button>
         <button id="cancel_edit_btn" class="btn-secondary btn-block" type="button" style="display:none; margin-top:10px;">Cancel editing</button>
@@ -340,6 +369,34 @@
     "Ansh", "Craig", "Sandesh", "Peter", "Lukas", "Charlie", "Andrew",
     "Deniz", "James", "Abhi", "Harrison", "Gabe", "Nate"
   ];
+  // The lunchbox: up to 3 entrées + 1 rice + Naan, all for one box price.
+  // Samosa / Mango Lassi (and anything custom) are charged separately.
+  const MENU = [
+    { name: "Butter Chicken", cat: "entree" },
+    { name: "Fried Chicken",  cat: "entree" },
+    { name: "Goat Curry",     cat: "entree" },
+    { name: "Dal",            cat: "entree" },
+    { name: "Saag Paneer",    cat: "entree" },
+    { name: "Dry Veggies",    cat: "entree" },
+    { name: "White Rice",     cat: "rice" },
+    { name: "Mixed Rice",     cat: "rice" },
+    { name: "Naan",           cat: "bread" },
+    { name: "Samosa",         cat: "extra" },
+    { name: "Mango Lassi",    cat: "extra" }
+  ];
+  const BOX_CATS = new Set(["entree", "rice", "bread"]);   // counts toward the box
+  const BOX_LIMITS = { entree: 3, rice: 1 };               // a box fits this many
+  const OTHER = "__other__";
+
+  function menuEntry(name){
+    const k = String(name || "").toLowerCase().trim();
+    return MENU.find(m => m.name.toLowerCase() === k) || null;
+  }
+  function catFor(name){ const e = menuEntry(name); return e ? e.cat : "custom"; }
+  function isBox(name){ return BOX_CATS.has(catFor(name)); }
+  // True if an order item belongs in the box (uses the stored flag, falls back to the menu).
+  function itemIsBox(it){ return (it && it.box != null) ? !!it.box : isBox(it && it.description); }
+
   const NAME_KEY = "ffl_myname";
   const MAX_ITEMS = 10;
   const POLL_MS = 4000;
@@ -372,27 +429,74 @@
   // ========== Item rows (form) ==========
   function rowCount(){ return $("item_rows").children.length; }
 
+  // Built once at init — the <select> options, grouped to show what's in the box.
+  let OPTIONS_HTML = "";
+  function buildOptionsHtml(){
+    let h = '<option value="" disabled selected>Choose an item…</option>';
+    h += '<optgroup label="In the lunchbox">';
+    MENU.filter(m => BOX_CATS.has(m.cat)).forEach(m => {
+      h += '<option value="' + escapeHtml(m.name) + '">' + escapeHtml(m.name) + '</option>';
+    });
+    h += '</optgroup><optgroup label="Extras (charged separately)">';
+    MENU.filter(m => m.cat === "extra").forEach(m => {
+      h += '<option value="' + escapeHtml(m.name) + '">' + escapeHtml(m.name) + '</option>';
+    });
+    h += '</optgroup>';
+    h += '<option value="' + OTHER + '">Something else…</option>';
+    return h;
+  }
+
+  function rowDescription(row){
+    const sel = row.querySelector(".it-select");
+    if(sel.value === OTHER) return row.querySelector(".it-custom").value.trim();
+    if(sel.value === "") return "";
+    return sel.value;
+  }
+
   function addItemRow(values){
     if(rowCount() >= MAX_ITEMS){ showToast("Max " + MAX_ITEMS + " items per order", "error"); return; }
     const v = values || {};
     const row = document.createElement("div");
     row.className = "item-row";
-    row.innerHTML = `
-      <div class="item-row__top">
-        <input type="text" class="it-desc" placeholder="e.g. Chicken Burrito" value="${escapeHtml(v.description || "")}" />
-        <button class="btn-icon it-remove" type="button" title="Remove this item">&times;</button>
-      </div>
-      <div class="item-row__bottom">
-        <input type="number" class="it-price item-row__price" step="0.01" min="0" inputmode="decimal" placeholder="$ (optional)" value="${v.amount != null ? escapeHtml(String(v.amount)) : ""}" />
-        <input type="text" class="it-note item-row__note" placeholder="e.g. no onions" value="${escapeHtml(v.note || "")}" />
-      </div>
-    `;
+    row.innerHTML =
+      '<div class="item-row__top">' +
+        '<select class="it-select">' + OPTIONS_HTML + '</select>' +
+        '<button class="btn-icon it-remove" type="button" title="Remove this item">&times;</button>' +
+      '</div>' +
+      '<input type="text" class="it-custom item-row__custom" placeholder="Type your item…" style="display:none;" />';
+    const sel = row.querySelector(".it-select");
+    const custom = row.querySelector(".it-custom");
+
+    // Prefill (used when editing an existing order)
+    const desc = (v.description || "").trim();
+    if(desc){
+      const entry = menuEntry(desc);
+      if(entry){
+        sel.value = entry.name;
+      } else {
+        sel.value = OTHER;
+        custom.value = desc;
+        custom.style.display = "";
+      }
+    } else {
+      sel.value = "";
+    }
+
+    sel.addEventListener("change", () => {
+      const other = sel.value === OTHER;
+      custom.style.display = other ? "" : "none";
+      if(other) custom.focus();
+      sel.classList.remove("field-error");
+      renderBoxPreview();
+    });
+    custom.addEventListener("input", () => { custom.classList.remove("field-error"); renderBoxPreview(); });
     row.querySelector(".it-remove").addEventListener("click", () => {
       if(rowCount() <= 1) return;
       row.remove();
       updateRowControls();
+      renderBoxPreview();
     });
-    row.querySelector(".it-desc").addEventListener("focus", (e) => e.target.classList.remove("field-error"));
+
     $("item_rows").appendChild(row);
     updateRowControls();
     return row;
@@ -409,50 +513,96 @@
     $("add_row_btn").disabled = rows.length >= MAX_ITEMS || isClosed();
   }
 
+  // Live "what's in your box vs charged separately" summary.
+  function renderBoxPreview(){
+    const el = $("box_preview");
+    const chosen = [];
+    for(const row of $("item_rows").children){
+      const d = rowDescription(row);
+      if(d) chosen.push(d);
+    }
+    if(chosen.length === 0){ el.style.display = "none"; el.innerHTML = ""; return; }
+    el.style.display = "";
+
+    const boxItems = chosen.filter(isBox);
+    const extras = chosen.filter(d => !isBox(d));
+    const counts = { entree: 0, rice: 0, bread: 0 };
+    boxItems.forEach(d => { const c = catFor(d); if(counts[c] != null) counts[c]++; });
+
+    let html = "";
+    if(boxItems.length){
+      html += '<div class="bp-line"><span class="bp-emoji">\u{1F371}</span> <b>Your box:</b> ' +
+        boxItems.map(escapeHtml).join(" · ") + '</div>';
+    } else {
+      html += '<div class="bp-line muted">Nothing in the box yet — pick entrées, rice or naan above.</div>';
+    }
+    if(counts.entree > BOX_LIMITS.entree){
+      html += '<div class="bp-warn">⚠ A box fits ' + BOX_LIMITS.entree + ' entrées — you’ve picked ' +
+        counts.entree + '. That may need a second box.</div>';
+    }
+    if(counts.rice > BOX_LIMITS.rice){
+      html += '<div class="bp-warn">⚠ A box comes with one rice — you’ve picked ' + counts.rice + '.</div>';
+    }
+    if(extras.length){
+      html += '<div class="bp-line bp-extra"><b>Charged separately:</b> ' + extras.map(escapeHtml).join(", ") + '</div>';
+    }
+    el.innerHTML = html;
+  }
+
   function resetForm(){
     $("item_rows").innerHTML = "";
     addItemRow();
     $("my_name").value = localStorage.getItem(NAME_KEY) || "";
     $("my_name").classList.remove("field-error");
+    $("order_note").value = "";
+    renderBoxPreview();
   }
 
   function collectItems(){
     const items = [];
     let firstBad = null;
     for(const row of $("item_rows").children){
-      const descEl = row.querySelector(".it-desc");
-      const desc = descEl.value.trim();
-      const priceRaw = row.querySelector(".it-price").value.trim();
-      const note = row.querySelector(".it-note").value.trim();
-      if(!desc && !priceRaw && !note) continue; // fully empty row -> skip
-      if(!desc){
-        descEl.classList.add("field-error");
-        if(!firstBad) firstBad = "Each item needs a description";
-        continue;
-      }
-      let amount = null;
-      if(priceRaw !== ""){
-        amount = Number(priceRaw);
-        if(!Number.isFinite(amount) || amount < 0){
-          if(!firstBad) firstBad = "Price must be a positive number (or leave it blank)";
+      const sel = row.querySelector(".it-select");
+      const custom = row.querySelector(".it-custom");
+      if(sel.value === "") continue; // nothing picked -> skip empty row
+      let desc;
+      if(sel.value === OTHER){
+        desc = custom.value.trim();
+        if(!desc){
+          custom.classList.add("field-error");
+          if(!firstBad) firstBad = "Type your item, or pick one from the list";
           continue;
         }
-        amount = Math.round(amount * 100) / 100;
+      } else {
+        desc = sel.value;
       }
-      items.push({ description: desc, amount, note });
+      items.push({ description: desc, box: isBox(desc) });
     }
     if(firstBad) throw new Error(firstBad);
-    if(items.length === 0) throw new Error("Add at least one item — what do you want for lunch?");
+    if(items.length === 0) throw new Error("Pick at least one item — what do you want for lunch?");
     return items;
   }
 
   // ========== Rendering ==========
   function isClosed(){ return session && session.status === "closed"; }
 
-  function itemLineHtml(it){
-    let html = escapeHtml(it.description);
-    if(it.amount != null) html += ' <span class="amt">($' + escapeHtml(money(it.amount)) + ')</span>';
-    if(it.note) html += ' <span class="note">&mdash; ' + escapeHtml(it.note) + '</span>';
+  // Renders an order's contents: the box (one line) + extras + order note.
+  function renderOrderBody(order){
+    const its = order.items || [];
+    const boxItems = its.filter(itemIsBox);
+    const extras = its.filter(it => !itemIsBox(it));
+    let html = "";
+    if(boxItems.length){
+      html += '<div class="order-row__item">\u{1F371} ' +
+        boxItems.map(i => escapeHtml(i.description)).join(" · ") + '</div>';
+    }
+    extras.forEach(e => {
+      html += '<div class="order-row__item">+ ' + escapeHtml(e.description) +
+        ' <span class="amt">(extra)</span></div>';
+    });
+    if(order.note){
+      html += '<div class="order-row__note">' + escapeHtml(order.note) + '</div>';
+    }
     return html;
   }
 
@@ -478,8 +628,8 @@
 
   function setFormEnabled(enabled){
     $("my_name").disabled = !enabled;
-    for(const inp of $("item_rows").querySelectorAll("input")) inp.disabled = !enabled;
-    for(const btn of $("item_rows").querySelectorAll("button")) btn.disabled = !enabled;
+    for(const el of $("item_rows").querySelectorAll("input, select, button")) el.disabled = !enabled;
+    $("order_note").disabled = !enabled;
     $("submit_btn").disabled = !enabled;
     $("add_row_btn").disabled = !enabled || rowCount() >= MAX_ITEMS;
     $("edit_btn").disabled = !enabled;
@@ -496,7 +646,7 @@
     const box = $("submitted_order");
     box.innerHTML =
       '<div class="order-row__name">' + escapeHtml(order.name) + ' <span class="pill pill--you">you</span></div>' +
-      (order.items || []).map(it => '<div class="order-row__item">' + itemLineHtml(it) + '</div>').join("");
+      renderOrderBody(order);
   }
 
   function setMode(newMode){
@@ -529,7 +679,7 @@
       return '<div class="order-row">' +
         '<div class="order-row__name">' + escapeHtml(o.name) +
           (isMe ? ' <span class="pill pill--you">you</span>' : '') + '</div>' +
-        (o.items || []).map(it => '<div class="order-row__item">' + itemLineHtml(it) + '</div>').join("") +
+        renderOrderBody(o) +
       '</div>';
     }).join("");
   }
@@ -628,9 +778,10 @@
     let items;
     try { items = collectItems(); }
     catch(e){ showToast(e.message, "error"); return; }
+    const note = $("order_note").value.trim();
 
     localStorage.setItem(NAME_KEY, name);
-    const body = JSON.stringify({ name, items });
+    const body = JSON.stringify({ name, items, note });
     $("submit_btn").disabled = true;
     try {
       let res;
@@ -679,10 +830,12 @@
     const mine = findMyOrder();
     if(!mine){ showToast("Couldn't find your order — it may have been removed", "error"); return; }
     $("my_name").value = mine.name || "";
+    $("order_note").value = mine.note || "";
     $("item_rows").innerHTML = "";
     (mine.items && mine.items.length ? mine.items : [{}]).forEach(it => addItemRow(it));
     setMode("editing");
     setFormEnabled(!isClosed());
+    renderBoxPreview();
   }
 
   function cancelEdit(){
@@ -737,6 +890,9 @@
       opt.value = n;
       dl.appendChild(opt);
     });
+
+    // Build the item <select> options once
+    OPTIONS_HTML = buildOptionsHtml();
 
     if(!sessionId){ showInvalid(); return; }
 

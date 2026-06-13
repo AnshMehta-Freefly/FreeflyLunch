@@ -167,8 +167,21 @@ function validateItems(items) {
     note = note.trim();
     if (note.length > 120) bad(`Item ${i + 1} note is too long (max 120 characters)`);
 
-    return { description, amount, note };
+    // Whether this item is part of the lunchbox (vs. charged separately).
+    // Decided by the client from the menu; stored so the splitter can group boxes.
+    const box = item.box === true;
+
+    return { description, amount, note, box };
   });
+}
+
+// Order-level note (e.g. "no onions in the butter chicken, extra spicy goat curry").
+function validateOrderNote(note) {
+  if (note === undefined || note === null) return '';
+  if (typeof note !== 'string') bad('Order note must be text');
+  const trimmed = note.trim();
+  if (trimmed.length > 280) bad('Order note is too long (max 280 characters)');
+  return trimmed;
 }
 
 // ---------- API handlers ----------
@@ -240,6 +253,7 @@ async function handleApi(req, res, pathname) {
         id: crypto.randomUUID(),
         name: validateName(body.name, 'Name'),
         items: validateItems(body.items),
+        note: validateOrderNote(body.note),
         token: crypto.randomUUID(),
         createdAt: now,
         updatedAt: now,
@@ -265,6 +279,7 @@ async function handleApi(req, res, pathname) {
         const body = await readJsonBody(req);
         if (body.name !== undefined) order.name = validateName(body.name, 'Name');
         if (body.items !== undefined) order.items = validateItems(body.items);
+        if (body.note !== undefined) order.note = validateOrderNote(body.note);
         order.updatedAt = Date.now();
         saveSession(session);
         return sendJson(res, 200, { order: publicOrder(order) });

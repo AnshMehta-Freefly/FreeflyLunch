@@ -1609,25 +1609,35 @@
   }
 
   function waluOrderSummary(){
-    const orders = GO.session.orders || [];
-    // Group identical descriptions across people
-    const byDish = new Map();
-    let itemCount = 0;
+    const orders = (GO.session && GO.session.orders) || [];
+    const boxCount = orders.filter(o => (o.items || []).some(isBoxItem)).length;
+    const lines = [`\u{1F4CB} ${GO.session.title} — ${boxCount} ${boxCount === 1 ? "box" : "boxes"}`];
+
+    // Per-person: one box (its contents) + any extras + their note
+    const extraTally = new Map();
     orders.forEach(o => {
-      (o.items || []).forEach(it => {
-        itemCount++;
-        const key = it.description.toLowerCase().trim();
-        if(!byDish.has(key)) byDish.set(key, { description: it.description, entries: [] });
-        byDish.get(key).entries.push({ name: o.name, note: it.note });
+      const boxItems = (o.items || []).filter(isBoxItem);
+      const extras = (o.items || []).filter(it => !isBoxItem(it));
+      let line = `  ${o.name}: `;
+      line += boxItems.length ? boxItems.map(it => it.description).join(", ") : "(no box)";
+      if(extras.length) line += ` | extras: ${extras.map(it => it.description).join(", ")}`;
+      if(o.note) line += ` (${o.note})`;
+      lines.push(line);
+      extras.forEach(e => {
+        const k = e.description.trim();
+        extraTally.set(k, (extraTally.get(k) || 0) + 1);
       });
     });
-    const lines = [`\u{1F4CB} ${GO.session.title} — ${orders.length} people, ${itemCount} items`];
-    [...byDish.values()].sort((a,b) => b.entries.length - a.entries.length).forEach(d => {
-      const who = d.entries.map(e => e.name + (e.note ? ` (${e.note})` : "")).join(", ");
-      lines.push(`  ${d.entries.length}× ${d.description} — ${who}`);
-    });
+
+    if(extraTally.size){
+      lines.push("");
+      lines.push(`Extras to add: ${[...extraTally.entries()].map(([k,v]) => `${v}× ${k}`).join(", ")}`);
+    }
     return lines.join("\n");
   }
+
+  // An order item is part of the lunchbox if the order page flagged it so.
+  const isBoxItem = (it) => it && it.box === true;
 
   function goRenderFeed(){
     const feed = $("go_feed");
@@ -1636,15 +1646,18 @@
       feed.innerHTML = '<div class="empty-state">No orders yet — post the link in Walu and they\'ll show up here live.</div>';
       return;
     }
-    const itemCount = orders.reduce((n,o) => n + (o.items || []).length, 0);
-    let html = `<div style="margin-bottom:6px;"><span class="pill">${orders.length} ${orders.length === 1 ? "person" : "people"} &middot; ${itemCount} ${itemCount === 1 ? "item" : "items"}</span></div>`;
+    const boxCount = orders.filter(o => (o.items || []).some(isBoxItem)).length;
+    const extraCount = orders.reduce((n,o) => n + (o.items || []).filter(it => !isBoxItem(it)).length, 0);
+    let html = `<div style="margin-bottom:6px;"><span class="pill">${orders.length} ${orders.length === 1 ? "person" : "people"} &middot; ${boxCount} ${boxCount === 1 ? "box" : "boxes"}${extraCount ? ` &middot; ${extraCount} extra${extraCount === 1 ? "" : "s"}` : ""}</span></div>`;
     orders.forEach(o => {
-      const itemsHtml = (o.items || []).map(it => {
-        const price = (it.amount === null || it.amount === undefined) ? ' <span class="noprice" title="No price yet — fill in from the receipt after import">($?)</span>' : ` ($${money(it.amount)})`;
-        const note = it.note ? ` <span class="note">— ${escapeHtml(it.note)}</span>` : "";
-        return `${escapeHtml(it.description)}${price}${note}`;
-      }).join("<br>");
-      html += `<div class="order-feed__row"><span class="order-feed__name">${escapeHtml(o.name)}</span><span class="order-feed__items">${itemsHtml}</span></div>`;
+      const boxItems = (o.items || []).filter(isBoxItem);
+      const extras = (o.items || []).filter(it => !isBoxItem(it));
+      let body = "";
+      if(boxItems.length) body += `\u{1F371} ${boxItems.map(it => escapeHtml(it.description)).join(" · ")}`;
+      if(extras.length) body += (body ? "<br>" : "") + extras.map(it => `+ ${escapeHtml(it.description)} <span class="noprice">(extra)</span>`).join("<br>");
+      if(o.note) body += `${body ? "<br>" : ""}<span class="note" style="color:var(--warn);">\u{1F4DD} ${escapeHtml(o.note)}</span>`;
+      if(!body) body = '<span class="muted">—</span>';
+      html += `<div class="order-feed__row"><span class="order-feed__name">${escapeHtml(o.name)}</span><span class="order-feed__items">${body}</span></div>`;
     });
     feed.innerHTML = html;
   }
@@ -1752,21 +1765,38 @@
       ]);
       if(!yes) return;
     }
+    // Each person becomes ONE "Lunchbox" line (priced once) plus a line per
+    // extra (Samosa, Lassi, …). The box's contents go in the note so the
+    // organizer knows what they're pricing.
     items.length = 0;
-    let missingPrices = 0;
+    let boxes = 0, extrasCount = 0;
     orders.forEach(o => {
-      (o.items || []).forEach(it => {
-        if(it.amount === null || it.amount === undefined) missingPrices++;
-        items.push({ description: it.description, amount: it.amount ?? null, kind: "person", person: o.name, note: it.note || "" });
+      const boxItems = (o.items || []).filter(isBoxItem);
+      const extras = (o.items || []).filter(it => !isBoxItem(it));
+      let noteUsed = false;
+      if(boxItems.length){
+        boxes++;
+        const contents = boxItems.map(it => it.description).join(", ");
+        items.push({
+          description: "Lunchbox",
+          amount: null, kind: "person", person: o.name,
+          note: contents + (o.note ? ` — ${o.note}` : "")
+        });
+        noteUsed = true;
+      }
+      extras.forEach((e, idx) => {
+        extrasCount++;
+        let n = "";
+        if(o.note && !noteUsed && idx === 0){ n = o.note; noteUsed = true; }
+        items.push({ description: e.description, amount: null, kind: "person", person: o.name, note: n });
       });
     });
     if(!$("payer").value.trim() && GO.session.organizer) $("payer").value = GO.session.organizer;
     refreshItemsTable();
     refreshAll();
     document.querySelectorAll(".card")[2].scrollIntoView({ behavior: "smooth" });
-    showToast(missingPrices > 0
-      ? `Imported ${items.length} items — fill in the ${missingPrices} highlighted price${missingPrices === 1 ? "" : "s"} from the receipt`
-      : `Imported ${items.length} items from ${orders.length} people`, "success");
+    const extraTxt = extrasCount ? ` + ${extrasCount} extra${extrasCount === 1 ? "" : "s"}` : "";
+    showToast(`Imported ${boxes} box${boxes === 1 ? "" : "es"}${extraTxt} — fill in each price from the receipt`, "success");
   });
 
   $("go_end").addEventListener("click", async () => {
