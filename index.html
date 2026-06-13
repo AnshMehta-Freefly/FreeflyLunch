@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Freefly IndiSplit</title>
+  <title>Freefly Lunch</title>
   <style>
     /* ===== Design Tokens — Dark Theme ===== */
     :root {
@@ -69,7 +69,6 @@
     }
     .card h2 {
       font-size: 16px; font-weight: 700; margin: 0 0 6px;
-      padding-bottom: 0; border-bottom: none;
       display: flex; align-items: center; gap: 8px;
       color: var(--text);
     }
@@ -135,6 +134,7 @@
     }
     .btn-primary:hover { background: var(--primary-dark); }
     .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-secondary {
       background: var(--bg-raised); color: var(--text); padding: 10px 16px;
       font-weight: 600; border: 1px solid var(--border); font-size: 13px;
@@ -158,6 +158,8 @@
       font-size: 11px; font-weight: 600; background: var(--primary-light);
       color: var(--primary); border: 1px solid rgba(110,168,254,0.2);
     }
+    .pill--success { background: var(--success-light); color: var(--success); border-color: rgba(99,230,190,0.2); }
+    .pill--danger { background: var(--danger-light); color: var(--danger); border-color: rgba(255,107,107,0.2); }
     .chip {
       display: inline-flex; align-items: center; gap: 6px;
       border-radius: var(--radius-pill); padding: 6px 14px;
@@ -168,6 +170,8 @@
     .chip--builtin { background: var(--bg-raised); color: var(--text-secondary); border: 1px solid var(--border); }
     .chip--removable { background: var(--primary-light); color: var(--primary); cursor: pointer; border: 1px solid rgba(110,168,254,0.2); }
     .chip--removable:hover { background: rgba(110,168,254,0.2); }
+    .chip--toggle { background: var(--bg-raised); color: var(--text-secondary); border: 1px solid var(--border); cursor: pointer; user-select: none; }
+    .chip--toggle.checked { background: var(--primary-light); color: var(--primary); border-color: rgba(110,168,254,0.3); }
     .chip input[type="checkbox"] { margin: 0; }
 
     /* ===== Tables ===== */
@@ -186,6 +190,15 @@
     tbody tr:hover { background: var(--surface-hover); }
     .right { text-align: right; }
     .tabnum { font-variant-numeric: tabular-nums; }
+
+    /* Inline-editable price in items table */
+    .price-inline {
+      width: 96px; height: 32px; padding: 4px 8px; text-align: right;
+      font-size: 13px;
+    }
+    .price-inline.missing-price {
+      border-color: var(--warn); box-shadow: 0 0 0 2px rgba(255,212,59,0.15);
+    }
 
     /* ===== Toggle Switch ===== */
     .toggle-wrap { display: flex; align-items: center; gap: 8px; }
@@ -258,6 +271,30 @@
       background: transparent; padding: 0; line-height: 1;
     }
     .saved-item-chip__remove:hover { background: var(--danger-light); color: var(--danger); }
+
+    /* ===== Group Order Card ===== */
+    .group-card { border-color: rgba(110,168,254,0.35); }
+    .link-box {
+      display: flex; gap: 8px; align-items: center; margin: 10px 0;
+      flex-wrap: wrap;
+    }
+    .link-box input {
+      flex: 1; min-width: 220px; font-family: var(--font-mono); font-size: 13px;
+      color: var(--primary);
+    }
+    .order-feed { margin-top: 14px; }
+    .order-feed__row {
+      display: flex; gap: 10px; padding: 10px 4px;
+      border-bottom: 1px solid var(--border-light); align-items: baseline;
+    }
+    .order-feed__row:last-child { border-bottom: none; }
+    .order-feed__name { font-weight: 700; min-width: 90px; }
+    .order-feed__items { flex: 1; color: var(--text-secondary); font-size: 13px; }
+    .order-feed__items .note { color: var(--text-muted); font-style: italic; }
+    .order-feed__items .noprice { color: var(--warn); }
+    .group-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .conn-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background: var(--success); margin-right: 6px; vertical-align: middle; }
+    .conn-dot.off { background: var(--danger); }
 
     /* ===== Action Bar ===== */
     .action-bar {
@@ -368,6 +405,8 @@
     .ok { color: var(--success); font-weight: 700; }
     .danger { color: var(--danger); font-weight: 700; }
     .kbd { display: inline-block; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); }
+    .mini-link { background: none; border: none; color: var(--primary); font-size: 11px; padding: 2px 4px; cursor: pointer; }
+    .mini-link:hover { text-decoration: underline; }
 
     /* ===== Responsive ===== */
     @media (max-width: 640px) {
@@ -375,10 +414,11 @@
       .card { padding: 16px; }
       .app-header h1 { font-size: 24px; }
       input[type="text"], input[type="number"] { width: 100%; }
-      .row { flex-direction: column; }
+      .row { flex-direction: column; align-items: stretch; }
       .field--grow { min-width: 0; }
       .results-summary { grid-template-columns: repeat(2, 1fr); }
       .share-cards { grid-template-columns: 1fr; }
+      .price-inline { width: 84px; }
     }
   </style>
 </head>
@@ -387,37 +427,79 @@
 
   <!-- ===== Header ===== -->
   <header class="app-header">
-    <h1>Freefly IndiSplit</h1>
+    <h1>Freefly Lunch</h1>
     <div class="app-header__badges">
-      <span class="pill">Offline</span>
-      <span class="pill">Itemized</span>
+      <span class="pill">Group ordering</span>
+      <span class="pill">Itemized split</span>
       <span class="pill">Penny-perfect</span>
     </div>
-    <p class="app-header__subtitle">Split restaurant bills fairly. Everything runs in your browser &mdash; nothing is uploaded anywhere.</p>
+    <p class="app-header__subtitle">Collect everyone's lunch order, then split the bill fairly &mdash; built for the #freefly-lunch crew.</p>
   </header>
 
-  <!-- ===== Step 1: Split Configuration ===== -->
+  <!-- ===== Group Order (shown only when the backend is reachable) ===== -->
+  <div class="card group-card" id="group_card" style="display:none;">
+    <h2>&#127860; Group Order</h2>
+    <p class="card-help">Start a session, post the link in <b>#freefly-lunch</b> on Walu, and watch orders roll in. When everyone's in, import them straight into the splitter below.</p>
+
+    <!-- State A: no active session -->
+    <div id="go_start">
+      <div class="row">
+        <div class="field">
+          <label>Your name (organizer)</label>
+          <input id="go_name" type="text" list="roster_datalist" placeholder="e.g. Ansh" />
+        </div>
+        <div class="field">
+          <button id="go_create" class="btn-primary">Start group order</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State B: active session -->
+    <div id="go_active" style="display:none;">
+      <div class="row" style="align-items:center;">
+        <span id="go_title" style="font-weight:700;font-size:15px;"></span>
+        <span id="go_status_pill" class="pill pill--success">Open for orders</span>
+        <span class="muted"><span class="conn-dot" id="go_conn"></span><span id="go_conn_label">live</span></span>
+      </div>
+      <div class="link-box">
+        <input id="go_link" type="text" readonly />
+        <button id="go_copy_link" class="btn-secondary btn-sm">Copy link</button>
+        <button id="go_copy_walu" class="btn-primary btn-sm">Copy Walu message</button>
+      </div>
+      <div class="field-hint">Paste the Walu message into #freefly-lunch &mdash; anyone who opens the link can add their order.</div>
+
+      <div class="order-feed" id="go_feed"></div>
+
+      <div class="group-actions">
+        <button id="go_copy_summary" class="btn-secondary btn-sm" title="Copy a per-dish summary — handy for calling in the order">Copy order summary</button>
+        <button id="go_toggle_status" class="btn-secondary btn-sm">Close ordering</button>
+        <button id="go_import" class="btn-primary btn-sm">Import into splitter &darr;</button>
+        <button id="go_end" class="btn-danger btn-sm" title="Forget this session on this browser (orders stay on the server)">End session</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Step 1: Setup ===== -->
   <div class="card">
     <h2><span class="step-num">1</span> Setup</h2>
-    <p class="card-help">Start here. Enter who paid the bill and who's splitting it, then add tax and tip from the receipt.</p>
+    <p class="card-help">Enter who paid the bill, then tax and tip from the receipt. Whoever appears on the items below is automatically part of the split.</p>
     <div class="row">
       <div class="field">
         <label>Who paid?</label>
-        <input id="payer" type="text" placeholder="e.g. Ansh" />
+        <input id="payer" type="text" list="roster_datalist" placeholder="e.g. Ansh" />
         <div class="field-hint">The person who paid the full bill</div>
       </div>
       <div class="field field--grow">
-        <label>Who's splitting?</label>
-        <input id="people" type="text" placeholder="Leave blank to use the full roster below" style="width:100%;" />
-        <div class="field-hint">Type names separated by commas, or leave blank to include everyone from the roster</div>
-      </div>
-      <div class="field">
-        <button id="make_people" class="btn-secondary">Refresh</button>
-        <div class="field-hint">Update the people list</div>
+        <label>Splitting extras but ordered nothing <span style="text-transform:none;font-weight:400;">(optional)</span></label>
+        <input id="extra_people" type="text" placeholder="Comma-separated names — usually leave blank" style="width:100%;" />
+        <div class="field-hint">Only needed for an equal split that includes someone with no items</div>
       </div>
     </div>
 
-    <div id="people_chips" style="margin-top:10px;"></div>
+    <div style="margin-top:10px;">
+      <span class="label" style="margin-bottom:4px;">Splitting the bill (auto-detected from items)</span>
+      <div id="people_chips"><span class="muted">Add items below &mdash; everyone on an item joins the split automatically.</span></div>
+    </div>
 
     <div class="row" style="margin-top:16px;">
       <div class="field">
@@ -484,7 +566,7 @@
   <!-- ===== Step 2: Items ===== -->
   <div class="card">
     <h2><span class="step-num">2</span> Items</h2>
-    <p class="card-help">Add each item from the receipt. For each item, enter what it is, how much it costs, and who ordered it. If multiple people shared a dish, choose "Shared" and pick who split it. Previously added items appear below for quick re-use.</p>
+    <p class="card-help">Add each item from the receipt &mdash; what it is, the price, and who ordered it. If a dish was shared, choose "Shared" and tick who split it. Prices can be edited right in the table (handy after importing a group order).</p>
 
     <!-- Saved Items Bar -->
     <div id="saved_items_bar" class="saved-items-bar"></div>
@@ -512,11 +594,12 @@
       <div class="field" id="person_wrap">
         <label>Person</label>
         <select id="it_person"></select>
+        <div class="field-hint">Names come from the roster</div>
       </div>
       <div class="field" id="shared_wrap" style="display:none; min-width: 300px;">
-        <label>Shared with</label>
-        <div id="shared_checkboxes" class="muted">Refresh people first.</div>
-        <div class="field-hint">Check everyone who shared this item &mdash; cost is split evenly</div>
+        <label>Shared with <button class="mini-link" id="shared_all" type="button">all</button><button class="mini-link" id="shared_none" type="button">none</button></label>
+        <div id="shared_checkboxes" class="muted"></div>
+        <div class="field-hint">Tick everyone who shared this item &mdash; cost is split evenly</div>
       </div>
       <div class="field">
         <button id="add_item" class="btn-primary btn-sm">+ Add Item</button>
@@ -528,7 +611,7 @@
         <thead>
           <tr>
             <th>Item</th>
-            <th class="right">Price</th>
+            <th class="right" style="width:120px;">Price ($)</th>
             <th>Who</th>
             <th class="right" style="width:100px;"></th>
           </tr>
@@ -536,7 +619,7 @@
         <tbody></tbody>
       </table>
       <div id="items_empty" class="empty-state">
-        No items yet. Add each dish/drink from the receipt above, or click a saved item to pre-fill the form.
+        No items yet. Add each dish/drink from the receipt above, import a group order, or click a saved item to pre-fill the form.
       </div>
     </div>
   </div>
@@ -556,7 +639,7 @@
   <!-- ===== Results ===== -->
   <div class="card results-card" id="results_card" style="display:none;">
     <h2>Results</h2>
-    <p class="card-help">Here's the breakdown. Each person's share includes their items plus their portion of tax and tip. Use the copy buttons to send people what they owe.</p>
+    <p class="card-help">Each person's share includes their items plus their portion of tax and tip. Copy the Walu summary to post the damage in #freefly-lunch.</p>
 
     <div id="results_summary" class="results-summary"></div>
     <div id="sanity"></div>
@@ -579,14 +662,19 @@
     <div id="proportion_wrap" class="proportion-bar-wrap"></div>
 
     <h3>Send to People</h3>
-    <p class="card-help">Click "Copy" on any card to copy a ready-to-send message, or "Copy All" for everyone at once.</p>
+    <p class="card-help">"Copy for Walu" gives you one message for the channel. Or copy person-by-person below.</p>
     <div class="share-section">
       <div id="share_cards" class="share-cards"></div>
-      <button id="copy_all" class="btn-secondary btn-sm" style="margin-top:8px;">Copy All</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        <button id="copy_walu_results" class="btn-primary btn-sm">&#128172; Copy for Walu</button>
+        <button id="copy_all" class="btn-secondary btn-sm">Copy All (one per line)</button>
+      </div>
     </div>
   </div>
 
 </div><!-- /.app -->
+
+<datalist id="roster_datalist"></datalist>
 
 <!-- Toast Container -->
 <div id="toast_container" class="toast-container"></div>
@@ -618,6 +706,32 @@
     a.href = url; a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
+  }
+
+  // Clipboard with fallback — navigator.clipboard is unavailable on plain-HTTP
+  // LAN origins (non-secure context), which is exactly how this app is served.
+  async function copyText(text){
+    try {
+      if(navigator.clipboard && window.isSecureContext){
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+      throw new Error("no clipboard api");
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;top:-1000px;opacity:0;";
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch {}
+      ta.remove();
+      return ok;
+    }
+  }
+  async function copyWithToast(text, msg){
+    const ok = await copyText(text);
+    showToast(ok ? (msg || "Copied!") : "Couldn't copy — select and copy manually", ok ? "success" : "error");
   }
 
   // ========== Toast System ==========
@@ -735,6 +849,16 @@
     return uniqSorted([...BUILTIN_ROSTER, ...loadLocalAdditions()]);
   }
 
+  function refreshRosterDatalist(){
+    const dl = $("roster_datalist");
+    dl.innerHTML = "";
+    getRoster().forEach(n => {
+      const opt = document.createElement("option");
+      opt.value = n;
+      dl.appendChild(opt);
+    });
+  }
+
   // ========== Item Library ==========
   const ITEM_LIBRARY_KEY = "indisplit_item_library_v1";
 
@@ -780,8 +904,21 @@
   }
 
   // ========== State ==========
-  const items = [];
-  let people = [];
+  const items = [];   // {description, amount (number|null), kind, person?|shared_with?, note?}
+  let people = [];    // inferred participants
+
+  // ========== Participant inference ==========
+  function inferParticipants(){
+    const names = [];
+    const payer = $("payer").value.trim();
+    if(payer) names.push(payer);
+    items.forEach(it => {
+      if(it.kind === "person") names.push(it.person);
+      else (it.shared_with || []).forEach(n => names.push(n));
+    });
+    parsePeople($("extra_people").value).forEach(n => names.push(n));
+    return uniqSorted(names);
+  }
 
   // ========== Saved Items Bar ==========
   function refreshSavedItemsBar(){
@@ -896,56 +1033,86 @@
           ]);
           if(yes){
             removeLocalName(name);
-            makeChips();
+            refreshAll();
             showToast(`Removed ${name}`, "info");
           }
         };
       }
       dbWrap.appendChild(chip);
     });
+    refreshRosterDatalist();
+  }
+
+  // Names available for assigning items: roster + anyone already in play
+  function assignableNames(){
+    return uniqSorted([...getRoster(), ...people]);
   }
 
   function refreshPeopleUI(){
     const sel = $("it_person");
+    const prev = sel.value;
     sel.innerHTML = "";
-    people.forEach(p => {
+    assignableNames().forEach(p => {
       const opt = document.createElement("option");
       opt.value = p; opt.textContent = p;
       sel.appendChild(opt);
     });
+    if(prev && Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
+
     const wrap = $("shared_checkboxes");
+    const prevChecked = new Set(getSharedSelected().map(x => x.toLowerCase()));
+    const everTouched = wrap.dataset.touched === "1";
+    const participantSet = new Set(people.map(x => x.toLowerCase()));
     wrap.innerHTML = "";
-    if(people.length === 0){
-      wrap.innerHTML = '<span class="muted">Click "Refresh" in Step 1 first.</span>';
-      return;
-    }
-    people.forEach(p => {
+    assignableNames().forEach(p => {
       const lbl = document.createElement("label");
-      lbl.className = "chip chip--active";
+      const isChecked = everTouched ? prevChecked.has(p.toLowerCase()) : participantSet.has(p.toLowerCase());
+      lbl.className = "chip chip--toggle" + (isChecked ? " checked" : "");
       lbl.style.cursor = "pointer";
-      lbl.innerHTML = `<input type="checkbox" value="${escapeHtml(p)}" checked /> ${escapeHtml(p)}`;
+      lbl.innerHTML = `<input type="checkbox" value="${escapeHtml(p)}" ${isChecked ? "checked" : ""} style="display:none;" /> ${escapeHtml(p)}`;
+      lbl.querySelector("input").addEventListener("change", (e) => {
+        wrap.dataset.touched = "1";
+        lbl.classList.toggle("checked", e.target.checked);
+      });
       wrap.appendChild(lbl);
     });
   }
 
-  function makeChips(){
-    const roster = getRoster();
-    const typed = parsePeople($("people").value);
-    const payer = $("payer").value.trim();
-    let active = typed.length ? typed : roster;
-    if(payer && !active.some(x => x.toLowerCase() === payer.toLowerCase())) active.push(payer);
-    people = uniqSorted(active);
+  function setAllShared(state){
+    const wrap = $("shared_checkboxes");
+    wrap.dataset.touched = "1";
+    wrap.querySelectorAll("input[type=checkbox]").forEach(c => {
+      c.checked = state;
+      c.closest("label").classList.toggle("checked", state);
+    });
+  }
+  $("shared_all").addEventListener("click", () => setAllShared(true));
+  $("shared_none").addEventListener("click", () => setAllShared(false));
+
+  function refreshChips(){
+    people = inferParticipants();
     const chips = $("people_chips");
     chips.innerHTML = "";
+    if(people.length === 0){
+      chips.innerHTML = '<span class="muted">Add items below &mdash; everyone on an item joins the split automatically.</span>';
+      return;
+    }
     people.forEach(p => {
       const span = document.createElement("span");
       span.className = "chip chip--active";
       span.textContent = p;
       chips.appendChild(span);
     });
+  }
+
+  function refreshAll(){
+    refreshChips();
     refreshPeopleUI();
     refreshRosterUI();
   }
+
+  $("payer").addEventListener("input", () => { refreshChips(); });
+  $("extra_people").addEventListener("input", () => { refreshChips(); });
 
   // ========== Items table ==========
   function refreshItemsTable(){
@@ -957,26 +1124,42 @@
       const assigned = it.kind === "person"
         ? it.person
         : `Shared: ${it.shared_with.join(", ")}`;
+      const missing = (it.amount === null || it.amount === undefined || it.amount === "");
+      const note = it.note ? ` <span class="muted" style="font-style:italic;">— ${escapeHtml(it.note)}</span>` : "";
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${escapeHtml(it.description)}</td>
-        <td class="right tabnum">$${money(it.amount)}</td>
+        <td>${escapeHtml(it.description)}${note}</td>
+        <td class="right"><input type="number" step="0.01" min="0" class="price-inline tabnum${missing ? " missing-price" : ""}"
+              value="${missing ? "" : escapeHtml(String(it.amount))}" placeholder="?" title="Edit price" /></td>
         <td style="font-size:12px;color:var(--text-secondary);">${escapeHtml(assigned)}</td>
         <td class="right">
           <button class="btn-icon" data-dup="${idx}" title="Duplicate — fill form with this item">&#x2398;</button>
           <button class="btn-icon" data-idx="${idx}" title="Remove this item">&times;</button>
         </td>
       `;
+      const priceInput = tr.querySelector(".price-inline");
+      priceInput.addEventListener("input", () => {
+        const v = priceInput.value;
+        items[idx].amount = (v === "" ? null : Number(v));
+        priceInput.classList.toggle("missing-price", v === "");
+      });
+      priceInput.addEventListener("change", () => {
+        if(priceInput.value !== "" && Number(priceInput.value) >= 0){
+          saveToItemLibrary(items[idx].description, Number(priceInput.value));
+          refreshSavedItemsBar();
+        }
+      });
       tr.querySelector("[data-idx]").onclick = (e) => {
         const i = Number(e.currentTarget.getAttribute("data-idx"));
         items.splice(i, 1);
         refreshItemsTable();
+        refreshAll();
       };
       tr.querySelector("[data-dup]").onclick = (e) => {
         const i = Number(e.currentTarget.getAttribute("data-dup"));
         const src = items[i];
         $("it_desc").value = src.description;
-        $("it_amt").value = src.amount;
+        $("it_amt").value = src.amount ?? "";
         $("it_desc").focus();
         showToast(`Duplicated "${src.description}" — pick a person and click Add`, "info");
       };
@@ -993,14 +1176,16 @@
   // ========== Core math (all in cents) ==========
   function compute(){
     const payer = $("payer").value.trim();
-    let ppl = parsePeople($("people").value);
-    if(ppl.length === 0) ppl = getRoster();
-    if(payer && !ppl.some(x => x.toLowerCase() === payer.toLowerCase())) ppl.push(payer);
-
     if(!payer) throw new Error("Enter who paid the bill in Step 1.");
-    if(ppl.length === 0) throw new Error("Add at least one person in Step 1.");
     if(items.length === 0) throw new Error("Add at least one item in Step 2.");
-    const pplSet = new Set(ppl.map(x => x.toLowerCase()));
+
+    const missing = items.filter(it => it.amount === null || it.amount === undefined || it.amount === "" || !isFinite(Number(it.amount)));
+    if(missing.length > 0){
+      throw new Error(`"${missing[0].description}" needs a price — fill in the highlighted prices in the items table.`);
+    }
+
+    const ppl = inferParticipants();
+    if(ppl.length === 0) throw new Error("Add at least one person via items in Step 2.");
 
     const subtotals = Object.fromEntries(ppl.map(p => [p, 0]));
 
@@ -1011,15 +1196,11 @@
 
       if(it.kind === "person"){
         const key = String(it.person || "").toLowerCase();
-        if(!pplSet.has(key)) throw new Error(`"${it.person}" is not in the people list. Check Step 1.`);
         const canon = ppl.find(x => x.toLowerCase() === key);
         subtotals[canon] += amtC;
       } else {
         const shared = (it.shared_with || []).map(x => String(x || "").trim()).filter(Boolean);
         if(shared.length === 0) throw new Error(`Shared item "${it.description}" has no one assigned.`);
-        shared.forEach(p => {
-          if(!pplSet.has(p.toLowerCase())) throw new Error(`"${p}" in shared item "${it.description}" is not in the people list.`);
-        });
         const shareC = Math.floor(amtC / shared.length);
         let remainder = amtC - shareC * shared.length;
         shared.forEach(p => {
@@ -1112,7 +1293,9 @@
   const BAR_COLORS = ["#6ea8fe","#e8710a","#63e6be","#a78bfa","#ff6b6b","#38d9a9","#f06595","#a1887f","#74c0fc","#ffd43b","#66d9e8","#c0eb75","#748ffc","#e599f7"];
 
   // ========== Render Results ==========
+  let lastResult = null;
   function render(result){
+    lastResult = result;
     const {payer, people, itemsTotalC, taxC, tipC, computedGrandC, receiptC, mismatchC, subtotals, extrasAlloc, totalShare, owes} = result;
 
     // Summary cards
@@ -1192,7 +1375,7 @@
     sorted.forEach((p, i) => {
       if(p.toLowerCase() === payer.toLowerCase()) return;
       const amt = money(fromCents(owes[p]));
-      const msg = `${p} owes ${payer} $${amt} (Freefly IndiSplit)`;
+      const msg = `${p} owes ${payer} $${amt} (Freefly Lunch)`;
       oweLines.push(msg);
       const color = BAR_COLORS[i % BAR_COLORS.length];
       const card = document.createElement("div");
@@ -1206,26 +1389,39 @@
         <button class="btn-secondary btn-sm share-card__copy" data-msg="${escapeHtml(msg)}">Copy</button>
       `;
       card.querySelector(".share-card__copy").addEventListener("click", (e) => {
-        const text = e.currentTarget.getAttribute("data-msg");
-        navigator.clipboard.writeText(text).then(() => showToast("Copied!", "success"));
+        copyWithToast(e.currentTarget.getAttribute("data-msg"));
       });
       shareCards.appendChild(card);
     });
 
     // Copy All
-    $("copy_all").onclick = () => {
-      navigator.clipboard.writeText(oweLines.join("\n")).then(() => showToast("All copied!", "success"));
-    };
+    $("copy_all").onclick = () => copyWithToast(oweLines.join("\n"), "All copied!");
+
+    // Copy for Walu
+    $("copy_walu_results").onclick = () => copyWithToast(waluResultsMessage(result), "Walu summary copied — paste it in #freefly-lunch");
 
     $("results_card").style.display = "";
     $("results_card").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function waluResultsMessage(result){
+    const {payer, people, computedGrandC, owes} = result;
+    const title = (GO.session && GO.session.title) ? GO.session.title : "Lunch split";
+    const lines = [];
+    lines.push(`\u{1F4B8} ${title} — total $${money(fromCents(computedGrandC))}, paid by ${payer}`);
+    [...people].sort((a,b)=>a.localeCompare(b)).forEach(p => {
+      if(p.toLowerCase() === payer.toLowerCase()) return;
+      lines.push(`  ${p}: $${money(fromCents(owes[p]))}`);
+    });
+    lines.push(`Pay ${payer} when you get a sec \u{1F64F}`);
+    return lines.join("\n");
   }
 
   // ========== Save/Load session ==========
   function snapshot(){
     return {
       payer: $("payer").value.trim(),
-      people: $("people").value,
+      extra_people: $("extra_people").value,
       tax: $("tax").value,
       tip: $("tip").value,
       allocation: $("allocation").value,
@@ -1237,7 +1433,8 @@
 
   function restore(s){
     $("payer").value = s.payer || "";
-    $("people").value = s.people || "";
+    // Backward compat: older saves had a free-text "people" field
+    $("extra_people").value = s.extra_people || s.people || "";
     $("tax").value = s.tax ?? "0";
     $("tip").value = s.tip ?? "0";
     $("allocation").value = s.allocation || "proportional";
@@ -1247,8 +1444,8 @@
 
     items.length = 0;
     (s.items || []).forEach(it => items.push(it));
-    makeChips();
     refreshItemsTable();
+    refreshAll();
   }
 
   $("save").addEventListener("click", () => {
@@ -1264,16 +1461,11 @@
   });
 
   $("export_json").addEventListener("click", () => {
-    download(`indisplit_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(snapshot(), null, 2));
+    download(`freefly_lunch_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(snapshot(), null, 2));
     showToast("Downloaded as JSON", "success");
   });
 
-  // ========== Wire up buttons ==========
-  $("make_people").addEventListener("click", () => {
-    makeChips();
-    showToast("People list updated");
-  });
-
+  // ========== Items form wiring ==========
   $("it_kind").addEventListener("change", () => {
     const k = $("it_kind").value;
     $("person_wrap").style.display = (k === "person") ? "" : "none";
@@ -1281,8 +1473,6 @@
   });
 
   $("add_item").addEventListener("click", () => {
-    if(people.length === 0) makeChips();
-
     const desc = $("it_desc").value.trim();
     const amtRaw = $("it_amt").value;
     const kind = $("it_kind").value;
@@ -1303,7 +1493,7 @@
       item.person = person;
     } else {
       const shared = getSharedSelected();
-      if(shared.length === 0){ showToast("Check at least 1 person who shared this item", "error"); return; }
+      if(shared.length === 0){ showToast("Tick at least 1 person who shared this item", "error"); return; }
       item.shared_with = shared;
     }
 
@@ -1313,6 +1503,7 @@
     $("it_amt").value = "";
     refreshItemsTable();
     refreshSavedItemsBar();
+    refreshAll();
     showToast(`Added "${desc}"`, "success");
   });
 
@@ -1334,7 +1525,7 @@
   $("load_demo").addEventListener("click", () => {
     restore({
       payer: "Ansh",
-      people: "",
+      extra_people: "",
       tax: "6.32",
       tip: "5.00",
       allocation: "proportional",
@@ -1357,7 +1548,7 @@
     if(!name){ showToast("Type a name to add", "error"); return; }
     addLocalName(name);
     $("db_add_name").value = "";
-    makeChips();
+    refreshAll();
     showToast(`Added ${name} to roster`, "success");
   });
 
@@ -1368,7 +1559,7 @@
     ]);
     if(yes){
       resetLocalAdditions();
-      makeChips();
+      refreshAll();
       showToast("Local additions cleared", "info");
     }
   });
@@ -1377,6 +1568,256 @@
   $("roster_header").addEventListener("click", () => {
     $("roster_header").classList.toggle("collapsed");
     $("roster_body").classList.toggle("collapsed");
+  });
+
+  // ========== Group Order (Walu integration) ==========
+  // Active only when this page is served by server.js (API on same origin).
+  const GO_STORE_KEY = "ffl_organizer_session_v1";
+  const MYNAME_KEY = "ffl_myname";
+  const GO = {
+    available: false,
+    lanBase: null,        // preferred base URL for shareable links (from /api/health)
+    session: null,        // public session object from the server
+    organizerToken: null,
+    pollTimer: null,
+    lastJson: ""
+  };
+
+  async function api(path, opts = {}){
+    const res = await fetch(path, {
+      headers: { "Content-Type": "application/json", ...(opts.token ? { "X-Auth-Token": opts.token } : {}) },
+      method: opts.method || "GET",
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    });
+    let data = null;
+    try { data = await res.json(); } catch {}
+    if(!res.ok) throw new Error((data && data.error) || `Request failed (${res.status})`);
+    return data;
+  }
+
+  function goLink(){
+    const base = GO.lanBase || location.origin;
+    return `${base}/o/${GO.session.id}`;
+  }
+
+  function waluOpenMessage(){
+    return [
+      `\u{1F35C} ${GO.session.title} — orders are OPEN!`,
+      `Add what you want here: ${goLink()}`,
+      `(no account needed, takes 20 seconds)`
+    ].join("\n");
+  }
+
+  function waluOrderSummary(){
+    const orders = GO.session.orders || [];
+    // Group identical descriptions across people
+    const byDish = new Map();
+    let itemCount = 0;
+    orders.forEach(o => {
+      (o.items || []).forEach(it => {
+        itemCount++;
+        const key = it.description.toLowerCase().trim();
+        if(!byDish.has(key)) byDish.set(key, { description: it.description, entries: [] });
+        byDish.get(key).entries.push({ name: o.name, note: it.note });
+      });
+    });
+    const lines = [`\u{1F4CB} ${GO.session.title} — ${orders.length} people, ${itemCount} items`];
+    [...byDish.values()].sort((a,b) => b.entries.length - a.entries.length).forEach(d => {
+      const who = d.entries.map(e => e.name + (e.note ? ` (${e.note})` : "")).join(", ");
+      lines.push(`  ${d.entries.length}× ${d.description} — ${who}`);
+    });
+    return lines.join("\n");
+  }
+
+  function goRenderFeed(){
+    const feed = $("go_feed");
+    const orders = (GO.session && GO.session.orders) || [];
+    if(orders.length === 0){
+      feed.innerHTML = '<div class="empty-state">No orders yet — post the link in Walu and they\'ll show up here live.</div>';
+      return;
+    }
+    const itemCount = orders.reduce((n,o) => n + (o.items || []).length, 0);
+    let html = `<div style="margin-bottom:6px;"><span class="pill">${orders.length} ${orders.length === 1 ? "person" : "people"} &middot; ${itemCount} ${itemCount === 1 ? "item" : "items"}</span></div>`;
+    orders.forEach(o => {
+      const itemsHtml = (o.items || []).map(it => {
+        const price = (it.amount === null || it.amount === undefined) ? ' <span class="noprice" title="No price yet — fill in from the receipt after import">($?)</span>' : ` ($${money(it.amount)})`;
+        const note = it.note ? ` <span class="note">— ${escapeHtml(it.note)}</span>` : "";
+        return `${escapeHtml(it.description)}${price}${note}`;
+      }).join("<br>");
+      html += `<div class="order-feed__row"><span class="order-feed__name">${escapeHtml(o.name)}</span><span class="order-feed__items">${itemsHtml}</span></div>`;
+    });
+    feed.innerHTML = html;
+  }
+
+  function goRender(){
+    const active = !!GO.session;
+    $("go_start").style.display = active ? "none" : "";
+    $("go_active").style.display = active ? "" : "none";
+    if(!active) return;
+    $("go_title").textContent = GO.session.title;
+    $("go_link").value = goLink();
+    const open = GO.session.status === "open";
+    const pill = $("go_status_pill");
+    pill.textContent = open ? "Open for orders" : "Ordering closed";
+    pill.className = "pill " + (open ? "pill--success" : "pill--danger");
+    $("go_toggle_status").textContent = open ? "Close ordering" : "Reopen ordering";
+    goRenderFeed();
+  }
+
+  function goSetConn(ok){
+    $("go_conn").classList.toggle("off", !ok);
+    $("go_conn_label").textContent = ok ? "live" : "reconnecting…";
+  }
+
+  async function goPollOnce(){
+    if(!GO.session) return;
+    try {
+      const data = await api(`/api/sessions/${GO.session.id}`);
+      goSetConn(true);
+      const json = JSON.stringify(data.session);
+      if(json !== GO.lastJson){
+        GO.lastJson = json;
+        GO.session = data.session;
+        goRender();
+      }
+    } catch(e) {
+      goSetConn(false);
+    }
+  }
+
+  function goStartPolling(){
+    if(GO.pollTimer) clearInterval(GO.pollTimer);
+    GO.pollTimer = setInterval(() => {
+      if(document.hidden) return;
+      goPollOnce();
+    }, 4000);
+  }
+
+  function goPersist(){
+    if(GO.session){
+      localStorage.setItem(GO_STORE_KEY, JSON.stringify({
+        id: GO.session.id, organizerToken: GO.organizerToken
+      }));
+    } else {
+      localStorage.removeItem(GO_STORE_KEY);
+    }
+  }
+
+  $("go_create").addEventListener("click", async () => {
+    const name = $("go_name").value.trim();
+    if(!name){ showToast("Enter your name first", "error"); return; }
+    localStorage.setItem(MYNAME_KEY, name);
+    if(!$("payer").value.trim()){ $("payer").value = name; refreshChips(); }
+    try {
+      const data = await api("/api/sessions", { method: "POST", body: { organizer: name } });
+      GO.session = data.session;
+      GO.organizerToken = data.organizerToken;
+      GO.lastJson = JSON.stringify(data.session);
+      goPersist();
+      goRender();
+      goStartPolling();
+      showToast("Group order started — copy the Walu message and post it!", "success");
+    } catch(e) {
+      showToast(e.message, "error");
+    }
+  });
+
+  $("go_copy_link").addEventListener("click", () => copyWithToast(goLink(), "Link copied"));
+  $("go_copy_walu").addEventListener("click", () => copyWithToast(waluOpenMessage(), "Walu message copied — paste it in #freefly-lunch"));
+  $("go_copy_summary").addEventListener("click", () => {
+    if(!GO.session.orders || GO.session.orders.length === 0){ showToast("No orders to summarize yet", "error"); return; }
+    copyWithToast(waluOrderSummary(), "Order summary copied");
+  });
+
+  $("go_toggle_status").addEventListener("click", async () => {
+    const next = GO.session.status === "open" ? "closed" : "open";
+    try {
+      const data = await api(`/api/sessions/${GO.session.id}/status`, { method: "PUT", token: GO.organizerToken, body: { status: next } });
+      GO.session = data.session;
+      GO.lastJson = JSON.stringify(data.session);
+      goRender();
+      showToast(next === "closed" ? "Ordering closed — no new orders accepted" : "Ordering reopened", "success");
+    } catch(e) {
+      showToast(e.message, "error");
+    }
+  });
+
+  $("go_import").addEventListener("click", async () => {
+    const orders = (GO.session && GO.session.orders) || [];
+    if(orders.length === 0){ showToast("No orders to import yet", "error"); return; }
+    if(items.length > 0){
+      const yes = await showModal("Replace items?", "The splitter already has items. Importing will replace them with the group order.", [
+        { label: "Cancel", value: false, cls: "btn-secondary" },
+        { label: "Replace", value: true, cls: "btn-danger" }
+      ]);
+      if(!yes) return;
+    }
+    items.length = 0;
+    let missingPrices = 0;
+    orders.forEach(o => {
+      (o.items || []).forEach(it => {
+        if(it.amount === null || it.amount === undefined) missingPrices++;
+        items.push({ description: it.description, amount: it.amount ?? null, kind: "person", person: o.name, note: it.note || "" });
+      });
+    });
+    if(!$("payer").value.trim() && GO.session.organizer) $("payer").value = GO.session.organizer;
+    refreshItemsTable();
+    refreshAll();
+    document.querySelectorAll(".card")[2].scrollIntoView({ behavior: "smooth" });
+    showToast(missingPrices > 0
+      ? `Imported ${items.length} items — fill in the ${missingPrices} highlighted price${missingPrices === 1 ? "" : "s"} from the receipt`
+      : `Imported ${items.length} items from ${orders.length} people`, "success");
+  });
+
+  $("go_end").addEventListener("click", async () => {
+    const yes = await showModal("End session?", "This forgets the session on this browser. The link stops being useful for you, but nothing is deleted from the server.", [
+      { label: "Cancel", value: false, cls: "btn-secondary" },
+      { label: "End session", value: true, cls: "btn-danger" }
+    ]);
+    if(!yes) return;
+    GO.session = null;
+    GO.organizerToken = null;
+    GO.lastJson = "";
+    if(GO.pollTimer) clearInterval(GO.pollTimer);
+    goPersist();
+    goRender();
+  });
+
+  async function goInit(){
+    // Detect the backend; on GitHub Pages / file:// this fails fast and the card stays hidden.
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 2500);
+      const res = await fetch("/api/health", { signal: ctrl.signal });
+      clearTimeout(t);
+      if(!res.ok) return;
+      const health = await res.json();
+      if(!health.ok) return;
+      GO.available = true;
+      if(health.lanBase) GO.lanBase = health.lanBase;
+      $("group_card").style.display = "";
+      $("go_name").value = localStorage.getItem(MYNAME_KEY) || $("payer").value.trim() || "";
+
+      // Resume a session we organized earlier (e.g. page reload)
+      const raw = localStorage.getItem(GO_STORE_KEY);
+      if(raw){
+        try {
+          const saved = JSON.parse(raw);
+          const data = await api(`/api/sessions/${saved.id}`);
+          GO.session = data.session;
+          GO.organizerToken = saved.organizerToken;
+          GO.lastJson = JSON.stringify(data.session);
+        } catch {
+          localStorage.removeItem(GO_STORE_KEY);
+        }
+      }
+      goRender();
+      if(GO.session) goStartPolling();
+    } catch {}
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if(!document.hidden && GO.session) goPollOnce();
   });
 
   // ========== Keyboard Shortcuts ==========
@@ -1396,9 +1837,10 @@
   });
 
   // ========== Startup ==========
-  makeChips();
+  refreshAll();
   refreshItemsTable();
   refreshSavedItemsBar();
+  goInit();
 </script>
 </body>
 </html>
