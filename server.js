@@ -379,6 +379,25 @@ function lanAddress() {
   return null;
 }
 
+// Turn the common startup failures into a clear, actionable message instead
+// of an unhandled 'error' event that dumps a stack trace and crashes.
+server.on('error', (err) => {
+  console.error('');
+  if (err.code === 'EADDRINUSE') {
+    console.error(`  ✖ Port ${PORT} is already in use.`);
+    console.error(`    Freefly Lunch may already be running, or another app has the port.`);
+    console.error(`    Start it on a different port:  node server.js ${PORT + 1}`);
+    console.error(`    Or find what's using it:       (Linux/macOS) lsof -i :${PORT}`);
+  } else if (err.code === 'EACCES') {
+    console.error(`  ✖ Not allowed to bind port ${PORT}.`);
+    console.error(`    Ports below 1024 need elevated privileges — pick a higher one:  node server.js 8126`);
+  } else {
+    console.error(`  ✖ Could not start the server: ${err.message}`);
+  }
+  console.error('');
+  process.exit(1);
+});
+
 server.listen(PORT, HOST, () => {
   const lan = lanAddress();
   console.log('');
