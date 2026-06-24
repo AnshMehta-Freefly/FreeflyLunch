@@ -1,0 +1,20 @@
+[Unit]
+Description=Freefly Lunch (group ordering + bill splitter)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ansh
+WorkingDirectory=/home/ansh/Freefly/FreeflyLunch
+ExecStart=/usr/bin/node /home/ansh/Freefly/FreeflyLunch/server.js
+# LAN mode: no PUBLIC_BASE_URL set, so order links use the machine's LAN IP.
+# Works for anyone on the office wifi. (If you ever expose it publicly behind an
+# HTTPS tunnel, set Environment=PUBLIC_BASE_URL=https://your-host here.)
+Restart=always
+RestartSec=3
+# Flush a backup when the service stops (e.g. shutdown). Non-fatal if it fails.
+ExecStopPost=/home/ansh/Freefly/FreeflyLunch/deploy/backup.sh
+
+[Install]
+WantedBy=multi-user.target

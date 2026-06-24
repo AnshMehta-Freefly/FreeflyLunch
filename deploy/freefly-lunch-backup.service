@@ -1,0 +1,8 @@
+[Unit]
+Description=Back up Freefly Lunch session data to a private git remote
+
+[Service]
+Type=oneshot
+User=ansh
+WorkingDirectory=/home/ansh/Freefly/FreeflyLunch
+ExecStart=/home/ansh/Freefly/FreeflyLunch/deploy/backup.sh

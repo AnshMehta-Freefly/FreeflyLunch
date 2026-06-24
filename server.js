@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Freefly Lunch — zero-dependency group lunch-ordering server.
+ * Freefly Lunch - zero-dependency group lunch-ordering server.
  * Serves the static front-end and a small JSON API with file persistence.
  * Usage: node server.js [port]   (default 8126)
  */
@@ -16,6 +16,10 @@ const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, 'data', 'sessions');
 const PORT = parseInt(process.argv[2], 10) || 8126;
 const HOST = '0.0.0.0';
+// When the server sits behind a public HTTPS tunnel (e.g. Tailscale Funnel or a
+// reverse proxy), set PUBLIC_BASE_URL so shareable order links use that hostname
+// instead of the LAN IP, which is unreachable from phones off the office network.
+const PUBLIC_BASE_URL = (process.env.PUBLIC_BASE_URL || '').trim().replace(/\/+$/, '') || null;
 const MAX_BODY = 100 * 1024; // 100KB
 
 const MIME = {
@@ -74,7 +78,7 @@ function defaultTitle() {
   const d = new Date();
   const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
   const month = d.toLocaleDateString('en-US', { month: 'short' });
-  return `Lunch — ${weekday} ${month} ${d.getDate()}`;
+  return `Lunch - ${weekday} ${month} ${d.getDate()}`;
 }
 
 function sendJson(res, code, obj) {
@@ -190,9 +194,11 @@ async function handleApi(req, res, pathname) {
   const parts = pathname.split('/').filter(Boolean); // e.g. ['api','sessions','abc123','orders']
 
   if (req.method === 'GET' && pathname === '/api/health') {
-    // lanBase lets the UI build shareable links even when the organizer is on localhost
+    // lanBase lets the UI build shareable links even when the organizer is on localhost.
+    // A configured PUBLIC_BASE_URL (HTTPS tunnel) wins so links work off the LAN too.
     const lan = lanAddress();
-    return sendJson(res, 200, { ok: true, app: 'freefly-lunch', lanBase: lan ? `http://${lan}:${PORT}` : null });
+    const base = PUBLIC_BASE_URL || (lan ? `http://${lan}:${PORT}` : null);
+    return sendJson(res, 200, { ok: true, app: 'freefly-lunch', lanBase: base });
   }
 
   // POST /api/sessions
@@ -390,7 +396,7 @@ server.on('error', (err) => {
     console.error(`    Or find what's using it:       (Linux/macOS) lsof -i :${PORT}`);
   } else if (err.code === 'EACCES') {
     console.error(`  ✖ Not allowed to bind port ${PORT}.`);
-    console.error(`    Ports below 1024 need elevated privileges — pick a higher one:  node server.js 8126`);
+    console.error(`    Ports below 1024 need elevated privileges - pick a higher one:  node server.js 8126`);
   } else {
     console.error(`  ✖ Could not start the server: ${err.message}`);
   }
@@ -404,8 +410,9 @@ server.listen(PORT, HOST, () => {
   console.log('  🍱 Freefly Lunch is running!');
   console.log('  ----------------------------------------');
   console.log(`  Local:   http://localhost:${PORT}`);
-  if (lan) console.log(`  Network: http://${lan}:${PORT}`);
+  if (PUBLIC_BASE_URL) console.log(`  Public:  ${PUBLIC_BASE_URL}`);
+  else if (lan) console.log(`  Network: http://${lan}:${PORT}`);
   console.log('  ----------------------------------------');
-  console.log('  Share the Network URL in the lunch channel.');
+  console.log(`  Share the ${PUBLIC_BASE_URL ? 'Public' : 'Network'} URL in the lunch channel.`);
   console.log('');
 });

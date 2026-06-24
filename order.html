@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Freefly Lunch</title>
   <style>
-    /* ===== Design Tokens — Dark Theme ===== */
+    /* ===== Design Tokens - Dark Theme ===== */
     :root {
       --primary: #6ea8fe;
       --primary-dark: #4a8af5;
@@ -304,7 +304,7 @@
         <div id="box_preview" class="box-preview" style="display:none;"></div>
 
         <label for="order_note" style="margin-top:18px;">Order notes <span style="text-transform:none;font-weight:400;color:var(--text-muted);">(optional)</span></label>
-        <textarea id="order_note" maxlength="280" placeholder="e.g. no onions in the butter chicken, extra spicy goat curry — anything the kitchen should know"></textarea>
+        <textarea id="order_note" maxlength="280" placeholder="e.g. no onions in the butter chicken, extra spicy goat curry - anything the kitchen should know"></textarea>
 
         <button id="submit_btn" class="btn-primary" type="button" style="margin-top:16px;">Place order &#x1F37D;</button>
         <button id="cancel_edit_btn" class="btn-secondary btn-block" type="button" style="display:none; margin-top:10px;">Cancel editing</button>
@@ -429,7 +429,7 @@
   // ========== Item rows (form) ==========
   function rowCount(){ return $("item_rows").children.length; }
 
-  // Built once at init — the <select> options, grouped to show what's in the box.
+  // Built once at init - the <select> options, grouped to show what's in the box.
   let OPTIONS_HTML = "";
   function buildOptionsHtml(){
     let h = '<option value="" disabled selected>Choose an item…</option>';
@@ -534,14 +534,14 @@
       html += '<div class="bp-line"><span class="bp-emoji">\u{1F371}</span> <b>Your box:</b> ' +
         boxItems.map(escapeHtml).join(" · ") + '</div>';
     } else {
-      html += '<div class="bp-line muted">Nothing in the box yet — pick entrées, rice or naan above.</div>';
+      html += '<div class="bp-line muted">Nothing in the box yet - pick entrées, rice or naan above.</div>';
     }
     if(counts.entree > BOX_LIMITS.entree){
-      html += '<div class="bp-warn">⚠ A box fits ' + BOX_LIMITS.entree + ' entrées — you’ve picked ' +
+      html += '<div class="bp-warn">⚠ A box fits ' + BOX_LIMITS.entree + ' entrées - you’ve picked ' +
         counts.entree + '. That may need a second box.</div>';
     }
     if(counts.rice > BOX_LIMITS.rice){
-      html += '<div class="bp-warn">⚠ A box comes with one rice — you’ve picked ' + counts.rice + '.</div>';
+      html += '<div class="bp-warn">⚠ A box comes with one rice - you’ve picked ' + counts.rice + '.</div>';
     }
     if(extras.length){
       html += '<div class="bp-line bp-extra"><b>Charged separately:</b> ' + extras.map(escapeHtml).join(", ") + '</div>';
@@ -579,7 +579,7 @@
       items.push({ description: desc, box: isBox(desc) });
     }
     if(firstBad) throw new Error(firstBad);
-    if(items.length === 0) throw new Error("Pick at least one item — what do you want for lunch?");
+    if(items.length === 0) throw new Error("Pick at least one item - what do you want for lunch?");
     return items;
   }
 
@@ -619,7 +619,7 @@
     }
     const banner = $("closed_banner");
     if(isClosed()){
-      banner.textContent = "Ordering is closed — ping " + (session.organizer || "the organizer") + " if you need a change.";
+      banner.textContent = "Ordering is closed - ping " + (session.organizer || "the organizer") + " if you need a change.";
       banner.style.display = "";
     } else {
       banner.style.display = "none";
@@ -754,7 +754,7 @@
     } catch (e) {
       if(initial){
         // Can't even load once -> show reconnect hint on the loading screen
-        $("loading_view").textContent = "Can't reach the server — retrying…";
+        $("loading_view").textContent = "Can't reach the server - retrying…";
       }
       $("reconnect_pill").style.display = "";
     } finally {
@@ -800,7 +800,7 @@
       }
       if(!res.ok){
         if(mode === "editing" && (res.status === 401 || res.status === 404)){
-          // Stale credentials or order gone — start fresh
+          // Stale credentials or order gone - start fresh
           saveAuth(null);
           setMode("form");
         }
@@ -813,14 +813,14 @@
         renderSubmitted(data.order);
       } else {
         saveAuth({ orderId: data.order.id, token: data.token });
-        showToast("Order placed — see you at lunch!", "success");
+        showToast("Order placed - see you at lunch!", "success");
         renderSubmitted(data.order);
       }
       setMode("submitted");
       lastSessionJson = ""; // force list refresh
       poll(false);
     } catch (e) {
-      showToast("Network error — check your connection and try again", "error");
+      showToast("Network error - check your connection and try again", "error");
     } finally {
       $("submit_btn").disabled = isClosed();
     }
@@ -828,7 +828,7 @@
 
   function startEdit(){
     const mine = findMyOrder();
-    if(!mine){ showToast("Couldn't find your order — it may have been removed", "error"); return; }
+    if(!mine){ showToast("Couldn't find your order - it may have been removed", "error"); return; }
     $("my_name").value = mine.name || "";
     $("order_note").value = mine.note || "";
     $("item_rows").innerHTML = "";
@@ -869,7 +869,7 @@
       lastSessionJson = "";
       poll(false);
     } catch (e) {
-      showToast("Network error — check your connection and try again", "error");
+      showToast("Network error - check your connection and try again", "error");
     }
   }
 

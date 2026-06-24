@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic Freefly Lunch data backup
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+# Catch up with a backup if the machine was asleep through a scheduled run.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Freefly Lunch</title>
   <style>
-    /* ===== Design Tokens — Dark Theme ===== */
+    /* ===== Design Tokens - Dark Theme ===== */
     :root {
       --primary: #6ea8fe;
       --primary-dark: #4a8af5;
@@ -471,7 +471,7 @@
       <div class="order-feed" id="go_feed"></div>
 
       <div class="group-actions">
-        <button id="go_copy_summary" class="btn-secondary btn-sm" title="Copy a per-dish summary — handy for calling in the order">Copy order summary</button>
+        <button id="go_copy_summary" class="btn-secondary btn-sm" title="Copy a per-dish summary - handy for calling in the order">Copy order summary</button>
         <button id="go_toggle_status" class="btn-secondary btn-sm">Close ordering</button>
         <button id="go_import" class="btn-primary btn-sm">Import into splitter &darr;</button>
         <button id="go_end" class="btn-danger btn-sm" title="Forget this session on this browser (orders stay on the server)">End session</button>
@@ -491,7 +491,7 @@
       </div>
       <div class="field field--grow">
         <label>Splitting extras but ordered nothing <span style="text-transform:none;font-weight:400;">(optional)</span></label>
-        <input id="extra_people" type="text" placeholder="Comma-separated names — usually leave blank" style="width:100%;" />
+        <input id="extra_people" type="text" placeholder="Comma-separated names - usually leave blank" style="width:100%;" />
         <div class="field-hint">Only needed for an equal split that includes someone with no items</div>
       </div>
     </div>
@@ -708,7 +708,7 @@
     URL.revokeObjectURL(url);
   }
 
-  // Clipboard with fallback — navigator.clipboard is unavailable on plain-HTTP
+  // Clipboard with fallback - navigator.clipboard is unavailable on plain-HTTP
   // LAN origins (non-secure context), which is exactly how this app is served.
   async function copyText(text){
     try {
@@ -731,7 +731,7 @@
   }
   async function copyWithToast(text, msg){
     const ok = await copyText(text);
-    showToast(ok ? (msg || "Copied!") : "Couldn't copy — select and copy manually", ok ? "success" : "error");
+    showToast(ok ? (msg || "Copied!") : "Couldn't copy - select and copy manually", ok ? "success" : "error");
   }
 
   // ========== Toast System ==========
@@ -949,7 +949,7 @@
         $("it_desc").value = it.description;
         $("it_amt").value = it.amount;
         $("it_desc").focus();
-        showToast(`Loaded "${it.description}" — pick who ordered it and click Add`, "info");
+        showToast(`Loaded "${it.description}" - pick who ordered it and click Add`, "info");
       });
       bar.appendChild(chip);
     });
@@ -1125,7 +1125,7 @@
         ? it.person
         : `Shared: ${it.shared_with.join(", ")}`;
       const missing = (it.amount === null || it.amount === undefined || it.amount === "");
-      const note = it.note ? ` <span class="muted" style="font-style:italic;">— ${escapeHtml(it.note)}</span>` : "";
+      const note = it.note ? ` <span class="muted" style="font-style:italic;">- ${escapeHtml(it.note)}</span>` : "";
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${escapeHtml(it.description)}${note}</td>
@@ -1133,7 +1133,7 @@
               value="${missing ? "" : escapeHtml(String(it.amount))}" placeholder="?" title="Edit price" /></td>
         <td style="font-size:12px;color:var(--text-secondary);">${escapeHtml(assigned)}</td>
         <td class="right">
-          <button class="btn-icon" data-dup="${idx}" title="Duplicate — fill form with this item">&#x2398;</button>
+          <button class="btn-icon" data-dup="${idx}" title="Duplicate - fill form with this item">&#x2398;</button>
           <button class="btn-icon" data-idx="${idx}" title="Remove this item">&times;</button>
         </td>
       `;
@@ -1161,7 +1161,7 @@
         $("it_desc").value = src.description;
         $("it_amt").value = src.amount ?? "";
         $("it_desc").focus();
-        showToast(`Duplicated "${src.description}" — pick a person and click Add`, "info");
+        showToast(`Duplicated "${src.description}" - pick a person and click Add`, "info");
       };
       tbody.appendChild(tr);
     });
@@ -1181,7 +1181,7 @@
 
     const missing = items.filter(it => it.amount === null || it.amount === undefined || it.amount === "" || !isFinite(Number(it.amount)));
     if(missing.length > 0){
-      throw new Error(`"${missing[0].description}" needs a price — fill in the highlighted prices in the items table.`);
+      throw new Error(`"${missing[0].description}" needs a price - fill in the highlighted prices in the items table.`);
     }
 
     const ppl = inferParticipants();
@@ -1398,7 +1398,7 @@
     $("copy_all").onclick = () => copyWithToast(oweLines.join("\n"), "All copied!");
 
     // Copy for Walu
-    $("copy_walu_results").onclick = () => copyWithToast(waluResultsMessage(result), "Walu summary copied — paste it in #freefly-lunch");
+    $("copy_walu_results").onclick = () => copyWithToast(waluResultsMessage(result), "Walu summary copied - paste it in #freefly-lunch");
 
     $("results_card").style.display = "";
     $("results_card").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1408,7 +1408,7 @@
     const {payer, people, computedGrandC, owes} = result;
     const title = (GO.session && GO.session.title) ? GO.session.title : "Lunch split";
     const lines = [];
-    lines.push(`\u{1F4B8} ${title} — total $${money(fromCents(computedGrandC))}, paid by ${payer}`);
+    lines.push(`\u{1F4B8} ${title} - total $${money(fromCents(computedGrandC))}, paid by ${payer}`);
     [...people].sort((a,b)=>a.localeCompare(b)).forEach(p => {
       if(p.toLowerCase() === payer.toLowerCase()) return;
       lines.push(`  ${p}: $${money(fromCents(owes[p]))}`);
@@ -1539,7 +1539,7 @@
         {description:"Appetizer platter", amount: 14.00, kind:"shared", shared_with:["Ansh","Craig","Abhi"]}
       ]
     });
-    showToast("Demo loaded — try clicking Compute Split!", "info");
+    showToast("Demo loaded - try clicking Compute Split!", "info");
   });
 
   // ========== Roster controls ==========
@@ -1602,7 +1602,7 @@
 
   function waluOpenMessage(){
     return [
-      `\u{1F35C} ${GO.session.title} — orders are OPEN!`,
+      `\u{1F35C} ${GO.session.title} - orders are OPEN!`,
       `Add what you want here: ${goLink()}`,
       `(no account needed, takes 20 seconds)`
     ].join("\n");
@@ -1611,7 +1611,7 @@
   function waluOrderSummary(){
     const orders = (GO.session && GO.session.orders) || [];
     const boxCount = orders.filter(o => (o.items || []).some(isBoxItem)).length;
-    const lines = [`\u{1F4CB} ${GO.session.title} — ${boxCount} ${boxCount === 1 ? "box" : "boxes"}`];
+    const lines = [`\u{1F4CB} ${GO.session.title} - ${boxCount} ${boxCount === 1 ? "box" : "boxes"}`];
 
     // Per-person: one box (its contents) + any extras + their note
     const extraTally = new Map();
@@ -1643,7 +1643,7 @@
     const feed = $("go_feed");
     const orders = (GO.session && GO.session.orders) || [];
     if(orders.length === 0){
-      feed.innerHTML = '<div class="empty-state">No orders yet — post the link in Walu and they\'ll show up here live.</div>';
+      feed.innerHTML = '<div class="empty-state">No orders yet - post the link in Walu and they\'ll show up here live.</div>';
       return;
     }
     const boxCount = orders.filter(o => (o.items || []).some(isBoxItem)).length;
@@ -1656,7 +1656,7 @@
       if(boxItems.length) body += `\u{1F371} ${boxItems.map(it => escapeHtml(it.description)).join(" · ")}`;
       if(extras.length) body += (body ? "<br>" : "") + extras.map(it => `+ ${escapeHtml(it.description)} <span class="noprice">(extra)</span>`).join("<br>");
       if(o.note) body += `${body ? "<br>" : ""}<span class="note" style="color:var(--warn);">\u{1F4DD} ${escapeHtml(o.note)}</span>`;
-      if(!body) body = '<span class="muted">—</span>';
+      if(!body) body = '<span class="muted">-</span>';
       html += `<div class="order-feed__row"><span class="order-feed__name">${escapeHtml(o.name)}</span><span class="order-feed__items">${body}</span></div>`;
     });
     feed.innerHTML = html;
@@ -1729,14 +1729,14 @@
       goPersist();
       goRender();
       goStartPolling();
-      showToast("Group order started — copy the Walu message and post it!", "success");
+      showToast("Group order started - copy the Walu message and post it!", "success");
     } catch(e) {
       showToast(e.message, "error");
     }
   });
 
   $("go_copy_link").addEventListener("click", () => copyWithToast(goLink(), "Link copied"));
-  $("go_copy_walu").addEventListener("click", () => copyWithToast(waluOpenMessage(), "Walu message copied — paste it in #freefly-lunch"));
+  $("go_copy_walu").addEventListener("click", () => copyWithToast(waluOpenMessage(), "Walu message copied - paste it in #freefly-lunch"));
   $("go_copy_summary").addEventListener("click", () => {
     if(!GO.session.orders || GO.session.orders.length === 0){ showToast("No orders to summarize yet", "error"); return; }
     copyWithToast(waluOrderSummary(), "Order summary copied");
@@ -1749,7 +1749,7 @@
       GO.session = data.session;
       GO.lastJson = JSON.stringify(data.session);
       goRender();
-      showToast(next === "closed" ? "Ordering closed — no new orders accepted" : "Ordering reopened", "success");
+      showToast(next === "closed" ? "Ordering closed - no new orders accepted" : "Ordering reopened", "success");
     } catch(e) {
       showToast(e.message, "error");
     }
@@ -1780,7 +1780,7 @@
         items.push({
           description: "Lunchbox",
           amount: null, kind: "person", person: o.name,
-          note: contents + (o.note ? ` — ${o.note}` : "")
+          note: contents + (o.note ? ` - ${o.note}` : "")
         });
         noteUsed = true;
       }
@@ -1796,7 +1796,7 @@
     refreshAll();
     document.querySelectorAll(".card")[2].scrollIntoView({ behavior: "smooth" });
     const extraTxt = extrasCount ? ` + ${extrasCount} extra${extrasCount === 1 ? "" : "s"}` : "";
-    showToast(`Imported ${boxes} box${boxes === 1 ? "" : "es"}${extraTxt} — fill in each price from the receipt`, "success");
+    showToast(`Imported ${boxes} box${boxes === 1 ? "" : "es"}${extraTxt} - fill in each price from the receipt`, "success");
   });
 
   $("go_end").addEventListener("click", async () => {
