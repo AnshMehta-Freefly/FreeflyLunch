@@ -11,9 +11,11 @@ ExecStart=/usr/bin/node /home/ansh/Freefly/FreeflyLunch/server.js
 # LAN mode: no PUBLIC_BASE_URL set, so order links use the machine's LAN IP.
 # Works for anyone on the office wifi. (If you ever expose it publicly behind an
 # HTTPS tunnel, set Environment=PUBLIC_BASE_URL=https://your-host here.)
-# Optional: enable "Read receipt with AI" - get a key at console.anthropic.com,
-# then uncomment and restart. Costs a few cents per receipt.
-# Environment=ANTHROPIC_API_KEY=sk-ant-...
+# Secrets (e.g. ANTHROPIC_API_KEY for "Read receipt with AI") live in this file,
+# NOT in this unit - keep them out of the public repo. The leading "-" makes the
+# file optional, so the service still starts before you create it.
+# Create it: sudo install -m 600 /dev/null /etc/freefly-lunch.env  (see deploy/DEPLOY.md)
+EnvironmentFile=-/etc/freefly-lunch.env
 Restart=always
 RestartSec=3
 # Flush a backup when the service stops (e.g. shutdown). Non-fatal if it fails.

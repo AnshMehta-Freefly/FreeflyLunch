@@ -1,2 +1,5 @@
 data/
 node_modules/
+# Local secrets - never commit (real values live in /etc/freefly-lunch.env)
+.env
+*.env

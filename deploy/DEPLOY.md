@@ -104,11 +104,19 @@ Lets you snap the receipt and have prices filled in automatically (Claude vision
 It's off unless an API key is set, so the button only appears once enabled.
 
 1. Create a key at <https://console.anthropic.com> (pay-as-you-go; ~$0.03-0.05 per receipt).
-2. In `deploy/freefly-lunch.service`, uncomment and fill the `ANTHROPIC_API_KEY` line.
+   Set a monthly spend limit and use a key dedicated to this app so it's easy to revoke.
+2. Put it in a root-only secrets file (kept out of the public repo):
+   ```bash
+   sudo install -m 600 /dev/null /etc/freefly-lunch.env
+   sudo nano /etc/freefly-lunch.env      # add one line: ANTHROPIC_API_KEY=sk-ant-your-key
+   ```
+   The unit already references it (`EnvironmentFile=-/etc/freefly-lunch.env`).
+   See `.env.example` for the keys the app understands.
 3. Reinstall and restart:
    ```bash
    sudo cp deploy/freefly-lunch.service /etc/systemd/system/
    sudo systemctl daemon-reload && sudo systemctl restart freefly-lunch
+   curl -s http://localhost:8126/api/health   # expect "receiptAI":true
    ```
 4. Open the splitter, import a group order (or add items), then click
    **Read receipt with AI** and pick the photo. Prices, tax, and tip fill in -
