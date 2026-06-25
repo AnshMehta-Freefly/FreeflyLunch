@@ -428,12 +428,7 @@
   <!-- ===== Header ===== -->
   <header class="app-header">
     <h1>Freefly Lunch</h1>
-    <div class="app-header__badges">
-      <span class="pill">Group ordering</span>
-      <span class="pill">Itemized split</span>
-      <span class="pill">Penny-perfect</span>
-    </div>
-    <p class="app-header__subtitle">Collect everyone's lunch order, then split the bill fairly &mdash; built for the #freefly-lunch crew.</p>
+    <p class="app-header__subtitle">Collect everyone's lunch order, then split the bill. Built for the #freefly-lunch crew.</p>
   </header>
 
   <!-- ===== Group Order (shown only when the backend is reachable) ===== -->
@@ -466,7 +461,7 @@
         <button id="go_copy_link" class="btn-secondary btn-sm">Copy link</button>
         <button id="go_copy_walu" class="btn-primary btn-sm">Copy Walu message</button>
       </div>
-      <div class="field-hint">Paste the Walu message into #freefly-lunch &mdash; anyone who opens the link can add their order.</div>
+      <div class="field-hint">Paste the Walu message into #freefly-lunch - anyone who opens the link can add their order.</div>
 
       <div class="order-feed" id="go_feed"></div>
 
@@ -498,7 +493,7 @@
 
     <div style="margin-top:10px;">
       <span class="label" style="margin-bottom:4px;">Splitting the bill (auto-detected from items)</span>
-      <div id="people_chips"><span class="muted">Add items below &mdash; everyone on an item joins the split automatically.</span></div>
+      <div id="people_chips"><span class="muted">Add items below - everyone on an item joins the split automatically.</span></div>
     </div>
 
     <div class="row" style="margin-top:16px;">
@@ -523,7 +518,7 @@
       <div class="field">
         <label>Receipt total ($)</label>
         <input id="receipt_total" type="number" step="0.01" min="0" placeholder="e.g. 86.42" />
-        <div class="field-hint">Optional &mdash; used to double-check the math</div>
+        <div class="field-hint">Optional - used to double-check the math</div>
       </div>
       <div class="field">
         <label>Auto-fix</label>
@@ -543,7 +538,7 @@
       <span class="chevron"></span> Roster
     </h2>
     <div class="collapsible-body collapsed" id="roster_body">
-      <p class="card-help" style="margin-top:0;">The built-in roster has the regular crew. Add more names here &mdash; they're saved in <b>your</b> browser only and will show up next time.</p>
+      <p class="card-help" style="margin-top:0;">The built-in roster has the regular crew. Add more names here - they're saved in <b>your</b> browser only and will show up next time.</p>
       <div class="row" style="margin-top:10px;">
         <div class="field field--grow">
           <label>New person</label>
@@ -566,7 +561,7 @@
   <!-- ===== Step 2: Items ===== -->
   <div class="card">
     <h2><span class="step-num">2</span> Items</h2>
-    <p class="card-help">Add each item from the receipt &mdash; what it is, the price, and who ordered it. If a dish was shared, choose "Shared" and tick who split it. Prices can be edited right in the table (handy after importing a group order).</p>
+    <p class="card-help">Add each item from the receipt - what it is, the price, and who ordered it. If a dish was shared, choose "Shared" and tick who split it. Prices can be edited right in the table (handy after importing a group order).</p>
 
     <!-- Saved Items Bar -->
     <div id="saved_items_bar" class="saved-items-bar"></div>
@@ -599,7 +594,7 @@
       <div class="field" id="shared_wrap" style="display:none; min-width: 300px;">
         <label>Shared with <button class="mini-link" id="shared_all" type="button">all</button><button class="mini-link" id="shared_none" type="button">none</button></label>
         <div id="shared_checkboxes" class="muted"></div>
-        <div class="field-hint">Tick everyone who shared this item &mdash; cost is split evenly</div>
+        <div class="field-hint">Tick everyone who shared this item - cost is split evenly</div>
       </div>
       <div class="field">
         <button id="add_item" class="btn-primary btn-sm">+ Add Item</button>
@@ -1094,7 +1089,7 @@
     const chips = $("people_chips");
     chips.innerHTML = "";
     if(people.length === 0){
-      chips.innerHTML = '<span class="muted">Add items below &mdash; everyone on an item joins the split automatically.</span>';
+      chips.innerHTML = '<span class="muted">Add items below - everyone on an item joins the split automatically.</span>';
       return;
     }
     people.forEach(p => {
@@ -1348,7 +1343,7 @@
         <td class="right tabnum">$${money(fromCents(subtotals[p]))}</td>
         <td class="right tabnum">$${money(fromCents(extrasAlloc[p]))}</td>
         <td class="right tabnum" style="font-weight:700;">$${money(fromCents(totalShare[p]))}</td>
-        <td class="right tabnum" style="font-weight:700;">${isPayer ? '<span style="color:var(--text-muted);">&#8212;</span>' : '$'+money(fromCents(owes[p]))}</td>
+        <td class="right tabnum" style="font-weight:700;">${isPayer ? '<span style="color:var(--text-muted);">-</span>' : '$'+money(fromCents(owes[p]))}</td>
       `;
       tbody.appendChild(tr);
     });

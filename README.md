@@ -1,6 +1,6 @@
 # Freefly Lunch
 
-Group lunch ordering + penny-perfect bill splitting for the #freefly-lunch crew.
+Group lunch ordering and bill splitting for the #freefly-lunch crew.
 
 Walu has no API, so the integration is link-based: you post a link in the
 channel, everyone puts their order in through that link, and the app gives you
