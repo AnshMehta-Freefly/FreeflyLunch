@@ -20,6 +20,9 @@ const HOST = '0.0.0.0';
 // reverse proxy), set PUBLIC_BASE_URL so shareable order links use that hostname
 // instead of the LAN IP, which is unreachable from phones off the office network.
 const PUBLIC_BASE_URL = (process.env.PUBLIC_BASE_URL || '').trim().replace(/\/+$/, '') || null;
+// Optional: when set, enables the "Read receipt with AI" endpoint (Claude vision).
+const ANTHROPIC_API_KEY = (process.env.ANTHROPIC_API_KEY || '').trim() || null;
+const RECEIPT_MAX_BODY = 12 * 1024 * 1024; // receipt images are far larger than MAX_BODY
 const MAX_BODY = 100 * 1024; // 100KB
 
 const MIME = {
@@ -87,7 +90,7 @@ function sendJson(res, code, obj) {
   res.end(body);
 }
 
-function readBody(req) {
+function readBody(req, maxBytes = MAX_BODY) {
   return new Promise((resolve, reject) => {
     let size = 0;
     let tooLarge = false;
@@ -95,7 +98,7 @@ function readBody(req) {
     req.on('data', (chunk) => {
       if (tooLarge) return; // keep draining so we can still send a response
       size += chunk.length;
-      if (size > MAX_BODY) {
+      if (size > maxBytes) {
         tooLarge = true;
         chunks.length = 0;
         return;
@@ -113,8 +116,8 @@ function readBody(req) {
   });
 }
 
-async function readJsonBody(req) {
-  const raw = await readBody(req);
+async function readJsonBody(req, maxBytes = MAX_BODY) {
+  const raw = await readBody(req, maxBytes);
   if (!raw.trim()) return {};
   try {
     const parsed = JSON.parse(raw);
@@ -188,6 +191,92 @@ function validateOrderNote(note) {
   return trimmed;
 }
 
+// ---------- receipt reading (Claude vision) ----------
+
+// Sends the receipt photo + the ordered items to Claude and asks for a price
+// per item index, plus tax and tip. Returns { items:[{index,amount}], tax, tip, currency }.
+async function parseReceipt(imageB64, mediaType, items) {
+  const itemList = items.map((it) => ({
+    index: Number(it.index),
+    description: String(it.description || ''),
+    who: String(it.who || ''),
+    note: String(it.note || ''),
+  }));
+
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      items: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: { index: { type: 'integer' }, amount: { type: 'number' } },
+          required: ['index', 'amount'],
+        },
+      },
+      tax: { type: 'number' },
+      tip: { type: 'number' },
+      currency: { type: 'string' },
+    },
+    required: ['items', 'tax', 'tip', 'currency'],
+  };
+
+  const prompt =
+    'You are reading a restaurant receipt to fill in prices for a lunch bill splitter.\n' +
+    'Below is the list of items people ordered, each with an index, a description, who ordered it, and an optional note.\n' +
+    'A "Lunchbox" is a single fixed-price combo; its note lists what is inside - price the whole box as one line, do not price the contents separately.\n' +
+    'Match each item to a line on the receipt and return its price in "amount" (a number, no currency symbol).\n' +
+    'If an item is not clearly on the receipt, give your best estimate, or 0 if you truly cannot tell.\n' +
+    'Also return the receipt tax and tip (0 if not shown) and the currency code (e.g. "USD").\n\n' +
+    'Items:\n' + JSON.stringify(itemList, null, 2);
+
+  const apiReq = {
+    model: 'claude-opus-4-8',
+    max_tokens: 2000,
+    output_config: { format: { type: 'json_schema', schema } },
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageB64 } },
+        { type: 'text', text: prompt },
+      ],
+    }],
+  };
+
+  let resp;
+  try {
+    resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify(apiReq),
+    });
+  } catch (e) {
+    throw Object.assign(new Error('Could not reach the AI service. Check the server\'s internet connection.'), { statusCode: 502 });
+  }
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    let msg = `AI service error (${resp.status})`;
+    try { const j = JSON.parse(text); if (j && j.error && j.error.message) msg += `: ${j.error.message}`; } catch {}
+    throw Object.assign(new Error(msg), { statusCode: 502 });
+  }
+
+  const data = await resp.json();
+  const textBlock = (data.content || []).find((b) => b.type === 'text');
+  if (!textBlock) throw Object.assign(new Error('The AI returned no usable result.'), { statusCode: 502 });
+  let parsed;
+  try { parsed = JSON.parse(textBlock.text); } catch {
+    throw Object.assign(new Error('The AI did not return a readable price list.'), { statusCode: 502 });
+  }
+  return parsed;
+}
+
 // ---------- API handlers ----------
 
 async function handleApi(req, res, pathname) {
@@ -198,7 +287,25 @@ async function handleApi(req, res, pathname) {
     // A configured PUBLIC_BASE_URL (HTTPS tunnel) wins so links work off the LAN too.
     const lan = lanAddress();
     const base = PUBLIC_BASE_URL || (lan ? `http://${lan}:${PORT}` : null);
-    return sendJson(res, 200, { ok: true, app: 'freefly-lunch', lanBase: base });
+    // receiptAI tells the UI whether the "Read receipt with AI" button should appear.
+    return sendJson(res, 200, { ok: true, app: 'freefly-lunch', lanBase: base, receiptAI: !!ANTHROPIC_API_KEY });
+  }
+
+  // POST /api/parse-receipt  → read a receipt photo and return per-item prices
+  if (req.method === 'POST' && pathname === '/api/parse-receipt') {
+    try {
+      if (!ANTHROPIC_API_KEY) {
+        return sendJson(res, 503, { error: 'Receipt reading is off. Set ANTHROPIC_API_KEY on the server to enable it.' });
+      }
+      const body = await readJsonBody(req, RECEIPT_MAX_BODY);
+      if (typeof body.image !== 'string' || !body.image) bad('No receipt image provided');
+      if (!Array.isArray(body.items) || body.items.length === 0) bad('No items to price yet');
+      const mediaType = typeof body.mediaType === 'string' ? body.mediaType : 'image/jpeg';
+      const result = await parseReceipt(body.image, mediaType, body.items);
+      return sendJson(res, 200, result);
+    } catch (e) {
+      return sendJson(res, e.statusCode || 502, { error: e.message || 'Could not read the receipt' });
+    }
   }
 
   // POST /api/sessions

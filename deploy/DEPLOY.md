@@ -98,6 +98,27 @@ sudo systemctl start freefly-lunch
 
 ---
 
+## D. Optional: Read receipt with AI
+
+Lets you snap the receipt and have prices filled in automatically (Claude vision).
+It's off unless an API key is set, so the button only appears once enabled.
+
+1. Create a key at <https://console.anthropic.com> (pay-as-you-go; ~$0.03-0.05 per receipt).
+2. In `deploy/freefly-lunch.service`, uncomment and fill the `ANTHROPIC_API_KEY` line.
+3. Reinstall and restart:
+   ```bash
+   sudo cp deploy/freefly-lunch.service /etc/systemd/system/
+   sudo systemctl daemon-reload && sudo systemctl restart freefly-lunch
+   ```
+4. Open the splitter, import a group order (or add items), then click
+   **Read receipt with AI** and pick the photo. Prices, tax, and tip fill in -
+   eyeball them, then Compute Split.
+
+Note: this sends the receipt photo to Anthropic's API (data leaves your machine).
+Only works on the LAN server, not the static GitHub Pages site.
+
+---
+
 ## What happens when your machine is off
 
 - **Bill-splitter:** still fully usable at your GitHub Pages site - it's pure

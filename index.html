@@ -605,6 +605,12 @@
       </div>
     </div>
 
+    <div id="receipt_ai_bar" style="display:none; align-items:center; gap:10px; flex-wrap:wrap; margin-top:14px; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg-raised);">
+      <button id="receipt_btn" class="btn-secondary btn-sm" title="Snap or upload the receipt; prices fill in automatically">&#128247; Read receipt with AI</button>
+      <span id="receipt_status" class="muted" style="font-size:12px;"></span>
+      <input id="receipt_file" type="file" accept="image/*" capture="environment" style="display:none;" />
+    </div>
+
     <div style="margin-top:16px;">
       <table id="items_table">
         <thead>
@@ -1771,6 +1777,74 @@
     }
   });
 
+  // ========== Read receipt with AI ==========
+  // Downscale to keep the upload small and the token cost low.
+  function readReceiptFile(file){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const maxEdge = 1600;
+        let w = img.width, h = img.height;
+        const scale = Math.min(1, maxEdge / Math.max(w, h));
+        w = Math.round(w * scale); h = Math.round(h * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        resolve({ data: dataUrl.split(",")[1], mediaType: "image/jpeg" });
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Could not read that image")); };
+      img.src = url;
+    });
+  }
+
+  async function handleReceiptFile(file){
+    if(!file) return;
+    if(items.length === 0){ showToast("Add or import items first, then read the receipt to fill prices", "error"); return; }
+    const status = $("receipt_status"), btn = $("receipt_btn");
+    try {
+      btn.disabled = true; if(status) status.textContent = "Reading receipt…";
+      const { data, mediaType } = await readReceiptFile(file);
+      const payload = items.map((it, idx) => ({
+        index: idx,
+        description: it.description,
+        who: it.kind === "person" ? (it.person || "") : ("shared: " + (it.shared_with || []).join(", ")),
+        note: it.note || "",
+      }));
+      const res = await fetch("/api/parse-receipt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: data, mediaType, items: payload }),
+      });
+      const out = await res.json();
+      if(!res.ok) throw new Error(out.error || "Could not read the receipt");
+      let filled = 0;
+      (out.items || []).forEach(r => {
+        if(typeof r.index === "number" && items[r.index] && typeof r.amount === "number"){
+          items[r.index].amount = Math.round(r.amount * 100) / 100;
+          filled++;
+        }
+      });
+      if(typeof out.tax === "number" && out.tax > 0) $("tax").value = Math.round(out.tax * 100) / 100;
+      if(typeof out.tip === "number" && out.tip > 0) $("tip").value = Math.round(out.tip * 100) / 100;
+      refreshItemsTable();
+      refreshAll();
+      if(status) status.textContent = "";
+      showToast(`Filled ${filled} price${filled === 1 ? "" : "s"} from the receipt - double-check before computing`, "success");
+    } catch(err){
+      if(status) status.textContent = "";
+      showToast(err.message || "Could not read the receipt", "error");
+    } finally {
+      btn.disabled = false;
+      $("receipt_file").value = "";
+    }
+  }
+
+  if($("receipt_btn")) $("receipt_btn").addEventListener("click", () => $("receipt_file").click());
+  if($("receipt_file")) $("receipt_file").addEventListener("change", (e) => handleReceiptFile(e.target.files && e.target.files[0]));
+
   $("go_import").addEventListener("click", async () => {
     const orders = (GO.session && GO.session.orders) || [];
     if(orders.length === 0){ showToast("No orders to import yet", "error"); return; }
@@ -1842,6 +1916,7 @@
       GO.available = true;
       if(health.lanBase) GO.lanBase = health.lanBase;
       $("group_card").style.display = "";
+      if(health.receiptAI){ const rb = $("receipt_ai_bar"); if(rb) rb.style.display = "flex"; }
       $("go_name").value = localStorage.getItem(MYNAME_KEY) || $("payer").value.trim() || "";
 
       // Resume a session we organized earlier (e.g. page reload)
