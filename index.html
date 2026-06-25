@@ -32,10 +32,10 @@
       --shadow-2: 0 6px 20px rgba(0,0,0,0.45);
       --shadow-3: 0 12px 40px rgba(0,0,0,0.55);
       --glow: 0 6px 18px rgba(249,126,46,0.28);
-      --radius-sm: 6px;
-      --radius: 9px;
-      --radius-lg: 14px;
-      --radius-pill: 999px;
+      --radius-sm: 2px;
+      --radius: 2px;
+      --radius-lg: 3px;
+      --radius-pill: 3px;
       --transition: 0.18s cubic-bezier(.4,0,.2,1);
       --font-mono: "SF Mono","Cascadia Code","Fira Code",ui-monospace,monospace;
       --grad-brand: linear-gradient(135deg, #ffce7a, #ff8a3d 55%, #f9603a);
@@ -49,11 +49,11 @@
       font-size: 14px; line-height: 1.6; color: var(--text);
       background: radial-gradient(1000px 460px at 50% -160px, rgba(255,159,69,0.10), transparent 70%), radial-gradient(820px 540px at 100% -40px, rgba(45,212,191,0.06), transparent 62%), var(--bg); background-attachment: fixed; margin: 0; padding: 24px 20px;
     }
-    .app { max-width: 920px; margin: 0 auto; }
+    .app { max-width: 1120px; margin: 0 auto; }
 
     /* ===== Header ===== */
     .app-header {
-      text-align: center; padding: 36px 0 28px; margin-bottom: 8px;
+      text-align: left; padding: 28px 0 24px; margin-bottom: 8px;
     }
     .app-header h1 {
       font-size: 30px; font-weight: 800; margin: 0 0 10px;
@@ -87,7 +87,7 @@
     /* ===== Stepped Guide Numbers ===== */
     .step-num {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 22px; height: 22px; border-radius: 50%;
+      width: 22px; height: 22px; border-radius: 2px;
       background: var(--primary); color: var(--bg); font-size: 11px;
       font-weight: 700; flex-shrink: 0;
     }
@@ -150,7 +150,7 @@
     }
     .btn-danger:hover { background: var(--danger-light); border-color: var(--danger); }
     .btn-icon {
-      width: 32px; height: 32px; padding: 0; border-radius: 50%;
+      width: 32px; height: 32px; padding: 0; border-radius: 2px;
       background: transparent; color: var(--text-secondary); font-size: 16px;
     }
     .btn-icon:hover { background: var(--surface-hover); }
@@ -271,7 +271,7 @@
     .saved-item-chip__amt { color: var(--text-muted); font-size: 12px; }
     .saved-item-chip__remove {
       width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
-      border-radius: 50%; font-size: 14px; color: var(--text-muted);
+      border-radius: 2px; font-size: 14px; color: var(--text-muted);
       background: transparent; padding: 0; line-height: 1;
     }
     .saved-item-chip__remove:hover { background: var(--danger-light); color: var(--danger); }
@@ -331,7 +331,7 @@
     /* Proportion Bar */
     .proportion-bar-wrap { margin: 16px 0; }
     .proportion-bar {
-      display: flex; height: 28px; border-radius: 14px; overflow: hidden;
+      display: flex; height: 28px; border-radius: 2px; overflow: hidden;
       background: var(--border);
     }
     .proportion-segment {
