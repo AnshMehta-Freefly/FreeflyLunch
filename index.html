@@ -488,6 +488,11 @@
         <input id="payer" type="text" list="roster_datalist" placeholder="e.g. Ansh" />
         <div class="field-hint">The person who paid the full bill</div>
       </div>
+      <div class="field">
+        <label>Your Venmo <span style="text-transform:none;font-weight:400;">(optional)</span></label>
+        <input id="venmo_handle" type="text" placeholder="e.g. Ansh-Mehta" />
+        <div class="field-hint">Adds a "pay you" link to each person's split. Saved in your browser.</div>
+      </div>
       <div class="field field--grow">
         <label>Splitting extras but ordered nothing <span style="text-transform:none;font-weight:400;">(optional)</span></label>
         <input id="extra_people" type="text" placeholder="Comma-separated names - usually leave blank" style="width:100%;" />
@@ -1125,6 +1130,19 @@
   }
 
   $("payer").addEventListener("input", () => { refreshChips(); });
+
+  // Venmo handle: remembered in this browser; adds "pay you" links to the split.
+  const VENMO_KEY = "ffl_venmo_handle";
+  function getVenmoHandle(){ return ($("venmo_handle").value || "").trim().replace(/^@+/, ""); }
+  function venmoPayLink(amountStr, note){
+    const h = getVenmoHandle();
+    if(!h) return "";
+    return `https://venmo.com/${encodeURIComponent(h)}?txn=pay&amount=${encodeURIComponent(amountStr)}&note=${encodeURIComponent(note)}`;
+  }
+  if($("venmo_handle")){
+    $("venmo_handle").value = localStorage.getItem(VENMO_KEY) || "";
+    $("venmo_handle").addEventListener("input", () => localStorage.setItem(VENMO_KEY, getVenmoHandle()));
+  }
   $("extra_people").addEventListener("input", () => { refreshChips(); });
 
   // ========== Items table ==========
@@ -1385,10 +1403,13 @@
     const shareCards = $("share_cards");
     shareCards.innerHTML = "";
     const oweLines = [];
+    const splitTitle = (GO.session && GO.session.title) ? GO.session.title : "Freefly Lunch";
     sorted.forEach((p, i) => {
       if(p.toLowerCase() === payer.toLowerCase()) return;
       const amt = money(fromCents(owes[p]));
-      const msg = `${p} owes ${payer} $${amt} (Freefly Lunch)`;
+      const link = venmoPayLink(amt, splitTitle);
+      let msg = `${p} owes ${payer} $${amt} (Freefly Lunch)`;
+      if(link) msg += `\nPay on Venmo: ${link}`;
       oweLines.push(msg);
       const color = BAR_COLORS[i % BAR_COLORS.length];
       const card = document.createElement("div");
@@ -1399,6 +1420,7 @@
           <div class="share-card__name">${escapeHtml(p)}</div>
           <div class="share-card__amount">$${amt}</div>
         </div>
+        ${link ? `<a class="btn-secondary btn-sm" href="${escapeHtml(link)}" target="_blank" rel="noopener" style="flex-shrink:0;">Venmo</a>` : ""}
         <button class="btn-secondary btn-sm share-card__copy" data-msg="${escapeHtml(msg)}">Copy</button>
       `;
       card.querySelector(".share-card__copy").addEventListener("click", (e) => {
@@ -1424,9 +1446,11 @@
     lines.push(`\u{1F4B8} ${title} - total $${money(fromCents(computedGrandC))}, paid by ${payer}`);
     [...people].sort((a,b)=>a.localeCompare(b)).forEach(p => {
       if(p.toLowerCase() === payer.toLowerCase()) return;
-      lines.push(`  ${p}: $${money(fromCents(owes[p]))}`);
+      const amt = money(fromCents(owes[p]));
+      const link = venmoPayLink(amt, title);
+      lines.push(`  ${p}: $${amt}${link ? " - " + link : ""}`);
     });
-    lines.push(`Pay ${payer} when you get a sec \u{1F64F}`);
+    lines.push(getVenmoHandle() ? `Tap your link to pay ${payer} on Venmo \u{1F64F}` : `Pay ${payer} when you get a sec \u{1F64F}`);
     return lines.join("\n");
   }
 
