@@ -904,6 +904,14 @@
 
   // ========== State ==========
   const items = [];   // {description, amount (number|null), kind, person?|shared_with?, note?}
+
+  // Items with a fixed, known price - auto-filled so the organizer never has to
+  // type them from the receipt. Keyed by lower-cased description.
+  const FIXED_PRICES = { "samosa": 2, "mango lassi": 4 };
+  function fixedPriceFor(desc){
+    const k = String(desc || "").trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(FIXED_PRICES, k) ? FIXED_PRICES[k] : null;
+  }
   let people = [];    // inferred participants
 
   // ========== Participant inference ==========
@@ -1471,10 +1479,19 @@
     $("shared_wrap").style.display = (k === "shared") ? "" : "none";
   });
 
+  // Auto-fill the price as soon as a fixed-price item is typed/picked.
+  $("it_desc").addEventListener("input", () => {
+    const fp = fixedPriceFor($("it_desc").value.trim());
+    if(fp !== null){ $("it_amt").value = String(fp); }
+  });
+
   $("add_item").addEventListener("click", () => {
     const desc = $("it_desc").value.trim();
-    const amtRaw = $("it_amt").value;
+    let amtRaw = $("it_amt").value;
     const kind = $("it_kind").value;
+    // Samosa / Mango Lassi have a fixed price - always use it.
+    const fixedAmt = fixedPriceFor(desc);
+    if(fixedAmt !== null){ amtRaw = String(fixedAmt); $("it_amt").value = amtRaw; }
 
     // Inline validation
     let valid = true;
@@ -1787,7 +1804,7 @@
         extrasCount++;
         let n = "";
         if(o.note && !noteUsed && idx === 0){ n = o.note; noteUsed = true; }
-        items.push({ description: e.description, amount: null, kind: "person", person: o.name, note: n });
+        items.push({ description: e.description, amount: fixedPriceFor(e.description), kind: "person", person: o.name, note: n });
       });
     });
     if(!$("payer").value.trim() && GO.session.organizer) $("payer").value = GO.session.organizer;
@@ -1795,7 +1812,7 @@
     refreshAll();
     document.querySelectorAll(".card")[2].scrollIntoView({ behavior: "smooth" });
     const extraTxt = extrasCount ? ` + ${extrasCount} extra${extrasCount === 1 ? "" : "s"}` : "";
-    showToast(`Imported ${boxes} box${boxes === 1 ? "" : "es"}${extraTxt} - fill in each price from the receipt`, "success");
+    showToast(`Imported ${boxes} box${boxes === 1 ? "" : "es"}${extraTxt} - fill in the remaining prices from the receipt`, "success");
   });
 
   $("go_end").addEventListener("click", async () => {
