@@ -7,34 +7,38 @@
   <style>
     /* ===== Design Tokens - Dark Theme ===== */
     :root {
-      --primary: #6ea8fe;
-      --primary-dark: #4a8af5;
-      --primary-light: rgba(110,168,254,0.12);
-      --primary-ring: rgba(110,168,254,0.25);
-      --success: #63e6be;
-      --success-light: rgba(99,230,190,0.12);
-      --danger: #ff6b6b;
-      --danger-light: rgba(255,107,107,0.12);
-      --warn: #ffd43b;
-      --warn-light: rgba(255,212,59,0.1);
-      --bg: #0d1117;
-      --bg-raised: #161b22;
-      --surface: #1c2128;
-      --surface-hover: #242b35;
-      --text: #e6edf3;
-      --text-secondary: #8b949e;
-      --text-muted: #6e7681;
-      --border: #30363d;
-      --border-light: #21262d;
-      --shadow-1: 0 1px 4px rgba(0,0,0,0.3);
-      --shadow-2: 0 4px 16px rgba(0,0,0,0.4);
-      --shadow-3: 0 8px 32px rgba(0,0,0,0.5);
+      --primary: #ff9f45;
+      --primary-dark: #f97e2e;
+      --primary-light: rgba(255,159,69,0.12);
+      --primary-ring: rgba(255,159,69,0.30);
+      --accent: #2dd4bf;
+      --accent-light: rgba(45,212,191,0.12);
+      --success: #34d399;
+      --success-light: rgba(52,211,153,0.12);
+      --danger: #ff5d5d;
+      --danger-light: rgba(255,93,93,0.12);
+      --warn: #fbbf24;
+      --warn-light: rgba(251,191,36,0.12);
+      --bg: #0a0d12;
+      --bg-raised: #11151c;
+      --surface: #161b23;
+      --surface-hover: #1d2530;
+      --text: #eaf0f7;
+      --text-secondary: #9aa5b4;
+      --text-muted: #6b7585;
+      --border: #262d39;
+      --border-light: #1b212b;
+      --shadow-1: 0 1px 4px rgba(0,0,0,0.35);
+      --shadow-2: 0 6px 20px rgba(0,0,0,0.45);
+      --shadow-3: 0 12px 40px rgba(0,0,0,0.55);
+      --glow: 0 6px 18px rgba(249,126,46,0.28);
       --radius-sm: 6px;
-      --radius: 8px;
-      --radius-lg: 12px;
+      --radius: 9px;
+      --radius-lg: 14px;
       --radius-pill: 999px;
-      --transition: 0.15s ease;
+      --transition: 0.18s cubic-bezier(.4,0,.2,1);
       --font-mono: "SF Mono","Cascadia Code","Fira Code",ui-monospace,monospace;
+      --grad-brand: linear-gradient(135deg, #ffce7a, #ff8a3d 55%, #f9603a);
     }
 
     /* ===== Reset & Base ===== */
@@ -43,7 +47,7 @@
     body {
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       font-size: 14px; line-height: 1.6; color: var(--text);
-      background: var(--bg); margin: 0; padding: 16px 12px 48px;
+      background: radial-gradient(900px 420px at 50% -140px, rgba(255,159,69,0.10), transparent 70%), radial-gradient(700px 480px at 100% -40px, rgba(45,212,191,0.06), transparent 62%), var(--bg); background-attachment: fixed; margin: 0; padding: 16px 12px 48px;
     }
     .app { max-width: 640px; margin: 0 auto; }
 
@@ -53,7 +57,7 @@
     }
     .app-header h1 {
       font-size: 28px; font-weight: 800; margin: 0 0 10px;
-      background: linear-gradient(135deg, #6ea8fe, #a78bfa);
+      background: var(--grad-brand);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
     }
@@ -110,7 +114,7 @@
       outline: none; border-color: var(--primary);
       box-shadow: 0 0 0 3px var(--primary-ring);
     }
-    input.field-error, select.field-error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(255,107,107,0.15); }
+    input.field-error, select.field-error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(255,93,93,0.15); }
     input:disabled, select:disabled, textarea:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* ===== Buttons ===== */
@@ -121,10 +125,10 @@
     }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-primary {
-      background: var(--primary); color: var(--bg); padding: 12px 24px;
+      background: var(--primary); color: var(--bg); padding: 12px 24px; box-shadow: var(--glow);
       font-weight: 700; font-size: 15px; width: 100%;
     }
-    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 8px 22px rgba(249,126,46,0.35); }
     .btn-primary:active:not(:disabled) { transform: scale(0.98); }
     .btn-secondary {
       background: var(--bg-raised); color: var(--text); padding: 10px 16px;
@@ -148,16 +152,16 @@
     .pill {
       display: inline-block; padding: 3px 10px; border-radius: var(--radius-pill);
       font-size: 11px; font-weight: 600; background: var(--primary-light);
-      color: var(--primary); border: 1px solid rgba(110,168,254,0.2);
+      color: var(--primary); border: 1px solid rgba(255,159,69,0.2);
     }
-    .pill--open { background: var(--success-light); color: var(--success); border-color: rgba(99,230,190,0.25); }
-    .pill--closed { background: var(--danger-light); color: var(--danger); border-color: rgba(255,107,107,0.25); }
+    .pill--open { background: var(--success-light); color: var(--success); border-color: rgba(52,211,153,0.25); }
+    .pill--closed { background: var(--danger-light); color: var(--danger); border-color: rgba(255,93,93,0.25); }
     .pill--you { font-size: 10px; padding: 1px 8px; vertical-align: middle; }
 
     /* ===== Banners ===== */
     .banner { padding: 12px 16px; border-radius: var(--radius); margin: 16px 0; font-size: 13px; }
-    .banner--ok { background: var(--success-light); color: var(--success); border: 1px solid rgba(99,230,190,0.2); }
-    .banner--warn { background: var(--warn-light); color: var(--warn); border: 1px solid rgba(255,212,59,0.25); }
+    .banner--ok { background: var(--success-light); color: var(--success); border: 1px solid rgba(52,211,153,0.2); }
+    .banner--warn { background: var(--warn-light); color: var(--warn); border: 1px solid rgba(251,191,36,0.25); }
 
     /* ===== Item Rows (your order form) ===== */
     .item-row {
@@ -173,7 +177,7 @@
     /* ===== Box preview (smart lunchbox summary) ===== */
     .box-preview {
       margin-top: 12px; padding: 12px 14px; border-radius: var(--radius);
-      background: var(--primary-light); border: 1px solid rgba(110,168,254,0.2);
+      background: var(--primary-light); border: 1px solid rgba(255,159,69,0.2);
       font-size: 13px; line-height: 1.6;
     }
     .box-preview .bp-line { color: var(--text); }
@@ -209,7 +213,7 @@
     /* ===== Reconnecting indicator ===== */
     .reconnect {
       font-size: 11px; font-weight: 600; color: var(--warn);
-      background: var(--warn-light); border: 1px solid rgba(255,212,59,0.25);
+      background: var(--warn-light); border: 1px solid rgba(251,191,36,0.25);
       border-radius: var(--radius-pill); padding: 2px 10px;
       text-transform: none; letter-spacing: 0;
     }
@@ -233,8 +237,8 @@
       border: 1px solid var(--border);
       animation: toastIn 0.3s ease; text-align: center;
     }
-    .toast--success { background: rgba(99,230,190,0.15); color: var(--success); border-color: rgba(99,230,190,0.3); }
-    .toast--error { background: rgba(255,107,107,0.15); color: var(--danger); border-color: rgba(255,107,107,0.3); }
+    .toast--success { background: rgba(52,211,153,0.15); color: var(--success); border-color: rgba(52,211,153,0.3); }
+    .toast--error { background: rgba(255,93,93,0.15); color: var(--danger); border-color: rgba(255,93,93,0.3); }
     .toast.toast-out { animation: toastOut 0.25s ease forwards; }
 
     /* ===== Empty State ===== */
